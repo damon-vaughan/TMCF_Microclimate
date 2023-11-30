@@ -1,20 +1,6 @@
 library(needs)
 needs(tidyverse, shiny, lubridate)
 
-# LVL2_trees <- read_csv("MC_LVL2_trees.csv")
-# FB1 <- LVL2_trees %>% 
-#   filter(Tree == "FB1") %>% 
-#   filter(Station == "S1")
-# str(FB1)
-#   
-# LVL2_pasture <- read_csv("MC_LVL2_pasture.csv") %>% 
-#   mutate(Station = "S0") %>% 
-#   select(Tree = PastureID, Station, everything())
-# FullTreeVec <- c("ET1", "ET2", "ET3", "ET4", "ET5", "ET6", "ET7", "ET8",
-#                  "FB1", "FB2", "FB3", "FB4", "FB5", "FB6", "FB7", "FB8",
-#                  "TV1", "TV2", "TV3", "TV4")
-# PastureVec <- c("ETP1", "ETP2", "FBP1", "FBP2", "TVP")
-
 # UI ----------------------------------------------------------------------
 
 ui <- fluidPage(
@@ -189,7 +175,7 @@ server <- function(input, output, session) {
 
 # Run app ----------------------------------------------------------------
 
-shinyApp(ui, server)
+# shinyApp(ui, server)
 
 # # Deploy app --------------------------------------------------------------
 # !Don't do this! Maybe need to run the token line, not sure. But deploy by pressing the blue button at the top right
@@ -202,13 +188,13 @@ shinyApp(ui, server)
 
 # Test server -------------------------------------------------------------
 
-testServer(server, {
-  session$setInputs(TreeID = "FB1")
-  session$setInputs(StationID = "S1")
-  session$setInputs(Variable = "Solar")
-  session$setInputs(dates = c(min = ymd("2022-09-01"),
-                              max = ymd("2022-12-01")))
-  session$setInputs(TimeRes = "15 min")
-  print(dataInput3())
-})
+# testServer(server, {
+#   session$setInputs(TreeID = "FB1")
+#   session$setInputs(StationID = "S1")
+#   session$setInputs(Variable = "Solar")
+#   session$setInputs(dates = c(min = ymd("2022-09-01"),
+#                               max = ymd("2022-12-01")))
+#   session$setInputs(TimeRes = "15 min")
+#   print(dataInput3())
+# })
 

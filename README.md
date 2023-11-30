@@ -13,7 +13,7 @@ Scripts_extra: Extra scripts I didn't want to delete
 Scripts:
 Functions_microclimate.R: Functions used in the Import script
 Import_and_process_MC_data.R: Processing script to import data from Zentracloud and then move it to L3.
-Shiny_MC.R: Script to create the Shiny app
+app.R: Script to create the Shiny app
 QC_MC.R: Quality control on MC data. This is a work in progress
 
 Units:
