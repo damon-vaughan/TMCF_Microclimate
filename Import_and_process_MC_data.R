@@ -8,6 +8,8 @@ needs(tidyverse, zentracloud, readxl)
 
 source("Functions_Microclimate.R")
 
+options(readr.show_col_types = FALSE)
+
 setZentracloudOptions(
   cache_dir = "C:/Users/vaug8/AppData/Local/R/cache/R/zentracloud",
   token = "2f197f0980ac6da7c6bc2922f48f6ac291ca1086"
@@ -30,7 +32,7 @@ import.log <- read_csv(file.path("Microclimate_data_supporting",
 #                                      "zl6_config_changes.xlsx")) %>% 
 #   mutate(Timestamp = ymd_hms(Timestamp, tz = "UTC"))
 
-## Vectors -----------------------------------------------------------------
+## Vectors --------------------------------------------------------------
 
 ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
            "ET3_MC1", "ET3_MC2", "ET3_MC3",
@@ -56,12 +58,12 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2023-10-31 23:23:59"
+endDL <- "2023-11-30 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
 MC.vec <- TV.vec
-i <- "FB3_MC3"
+# i <- "FB3_MC3"
 for(i in MC.vec){
   
   # Have to read and write this for each element 
@@ -149,121 +151,17 @@ for(i in MC.vec){
   
   write_csv(import.log, file.path("Microclimate_data_supporting",
                                   "zl6_import_log.csv"))
-  
-  # Add back in if there are ever problems with import stopping too early
-  # maxdate.warning <- max(d2$Timestamp) + hours(1) < ymd_hms(endDL, tz = "UTC")
-  # if(maxdate.warning == T){
-  #   Log1 <- data.frame(MC = i, Action = "Saved raw data", 
-  #                      Problems = "Lacking complete interval")
-  # } else{
-  # }
-  
-  #  on last element write import log CSV
-  # if(i == MCvec[length(MCvec)]){
-  #   write_csv(import.log, file.path("Microclimate_data_supporting",
-  #                                   "zl6_import_log.csv"))
-  # }
-}
 
-# Step 1b: Import noZC -----------------------------------------------
-# Must save the Excel files as csv- utf8, otherwise R can't handle the special characters 
-
-zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
-                             "zl6_database.csv")) %>% 
-  filter(Zentracloud == "No")
-
-## Loop --------------------------------------------------------------------
-import.date <- "2023-10-27"
-filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
-                                  import.date),
-                        pattern = "csv", full.names = T)
-
-i <- filenames[6]
-for(i in filenames){
-  # Read true raw data and change column names
-  d <- read_MC_noZC(i) %>% 
-    change_column_names(source = "NoZC")
-  
-  # get rid of any ghost sensors
-  if(length(which(str_detect(names(d), "Unknown"))) > 0){
-    d2 <- d %>% 
-      select(-names(d)[which(str_detect(names(d), "Unknown"))])
-  } else {
-    d2 <- d
-  }
-  
-  # Find ZL from the filename
-  ZL = str_sub(i, start = str_locate(i, "z6")[1], 
-               end = str_locate(i, "z6")[1] + 7)
-  
-  # Use the table to look up MC.ID based on ZL.ID
-  MC.ID <- zl6.noZC %>% 
-    filter(ZL.ID == ZL) %>% 
-    pull(MC.ID)
-  
-  d3 <- d2 %>% 
-    mutate(Tree = str_split(MC.ID, "_")[[1]][1],
-           MC = str_split(MC.ID, "_")[[1]][2]) %>%
-    select(Tree, MC, Timestamp, everything()) 
-  
-  new.data.starts <- min(d2$Timestamp, na.rm = T)
-  new.data.ends <- max(d2$Timestamp, na.rm = T)
-  
-  # Check if raw file has been started. If not, start one
-  filename.in.raw <- file.path("Microclimate_data_raw", str_c(MC.ID, ".csv"))
-  if(file.exists(filename.in.raw) == F){
-    
-    write_csv(d3, filename.in.raw)
-    
-    cat("Imported from: ", MC.ID, "\n")
-    
-  } else {
-    # If raw file exists
-    raw.data <- read_csv(filename.in.raw,
-                         show_col_types = F)
-    
-    data.needed.starting <- max(raw.data$Timestamp)
-    
-    # Check if new file contains new data, and check for gap
-    if(new.data.starts <= data.needed.starting + hours(1) & 
-       new.data.ends > data.needed.starting){
-      
-      d.append <- d3 %>% 
-        filter(Timestamp > ymd_hms(data.needed.starting, tz = "UTC"))
-      
-      d.out <- bind_rows(raw.data, d.append) %>% 
-        distinct() %>% 
-        arrange(Timestamp)
-      
-      write_csv(d.out, filename.in.raw)
-      
-      cat("Imported from: ", MC.ID, "\n")
-      
-    } else if(new.data.starts <= data.needed.starting & 
-              new.data.ends <= data.needed.starting) {
-      
-      cat(str_c("No import needed from: ", MC.ID, "_", ZL, "\n"))
-      
-    } else{
-      cat("Something weird happened with", MC.ID, ZL, "\n")
-    }
-  }
-}
-test <- read_csv(filename.in.raw, 
-                 show_col_types = F)
-str(test)
-
-
-# Step 1b alt -------------------------------------------------------------
+# Step 1b -------------------------------------------------------------
 zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
                                "zl6_database.csv")) %>% 
   filter(Zentracloud == "No")
 
-## Loop --------------------------------------------------------------------
+## Loop ----------------------------------------------------------------
 
 no.ZC.vec <- no.ZC.vec.full
 
-i <- no.ZC.vec[1]
+i <- no.ZC.vec[9]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -312,9 +210,10 @@ zl6.db.long <- read_csv(file.path("Microclimate_data_supporting",
 zl6.db <- read_csv(file.path("Microclimate_data_supporting",
                              "zl6_database.csv"))
 
-## Loop, trees ----------------------------------------------------------------
+## Loop, trees ------------------------------------------------------------
 
 tree.vec <- full.tree.vec
+tree.vec <- c("FB5", "FB6", "FB7", "FB8", "TV1", "TV2", "TV3", "TV4")
 
 duplicate.log <- data.frame(
   Tree = NA, Station = NA, Timestamp = NA, Solar = NA, Atmos_pressure = NA, 
@@ -376,10 +275,10 @@ for(i in tree.vec){
   cat("saved data for: ", i, "\n")
 }
 
-## Loop, pasture stations --------------------------------------------------
+## Loop, pasture stations --------------------------------------
 
 
-# pasture.vec <- "FBP2"
+# pasture.vec <- "TVP"
 for(i in pasture.vec){
   
   d <- read_csv(file.path("Microclimate_data_raw", str_c(i, "_ATM41.csv")),
@@ -408,17 +307,15 @@ for(i in pasture.vec){
 library(needs)
 needs(tidyverse, here, lubridate)
 
-toJune2023.dir <- "C:/Users/vaug8/OneDrive - University of Kentucky/TMCF/Continuous_data/Microclimate_toJune2023"
-# source("MC_functions2.R")
-
 tree.vec <- full.tree.vec
 
 MC.vec <- c(tree.vec, pasture.vec)
-MC.vec <- JulyProbs
+# MC.vec <- JulyProbs
 
-i <- "FB2"
+# i <- "FB2"
 for(i in MC.vec){
-  old.dat <- read_csv(file.path(toJune2023.dir, "Microclimate_data_LVL2",
+  old.dat <- read_csv(file.path("Microclimate_data_L2",
+                                "Microclimate_toJune2023_L2",
                                 str_c(i, "_LVL2.csv")),
                       show_col_types = F) 
   
@@ -458,8 +355,49 @@ for(i in MC.vec){
   cat("saved data for: ", i, "\n")
 }
 
+# Troubleshooting and extra ------------------------------------
 
-# Troubleshooting ---------------------------------------------------------
+## Adding Cansoil to the pre-June data -------------------------------------
+# First, manually download from ZC. Then save Excel files as UTF csv, and clean up a little bit. Then edit the name to not have MC number.
+# Save over the original. To find the original original, look in Archive for the preJune MC original folder
+
+to.June.dir <- file.path("Microclimate_data_L2", "Microclimate_toJune2023_L2")
+
+FB2 <- read_csv(file.path(to.June.dir, "FB2_LVL2.csv"))
+FB2.Cansoil <- read_csv(file.path(to.June.dir, "Epi_sensors", "FB2_MC1.csv"),
+                        na = "#N/A") %>% 
+  mutate(Timestamp = mdy_hm(Timestamp))
+
+x <- "FB2"
+add_preJune_cansoil <- function(x){
+  d <- read_csv(file.path(to.June.dir, str_c(x, "_LVL2.csv")))
+  Cansoil <- read_csv(file.path(to.June.dir, "Epi_sensors", 
+                                str_c(x, ".csv")),
+                      na = "#N/A") %>% 
+    mutate(Timestamp = mdy_hm(Timestamp)) %>% 
+    mutate(Tree = x, Station = "Cansoil")
+  out <- bind_rows(d, Cansoil)
+  return(out)
+  }  
+
+FB2 <- add_preJune_cansoil("FB2")
+write_csv(FB2, file.path(to.June.dir, "FB2_LVL2.csv"))
+
+FB4 <- add_preJune_cansoil("FB4")
+write_csv(FB4, file.path(to.June.dir, "FB4_LVL2.csv"))
+
+FB6 <- add_preJune_cansoil("FB6")
+write_csv(FB6, file.path(to.June.dir, "FB6_LVL2.csv"))
+
+ET8 <- add_preJune_cansoil("ET8")
+write_csv(ET8, file.path(to.June.dir, "ET8_LVL2.csv"))
+
+TV4 <- add_preJune_cansoil("TV4")
+write_csv(TV4, file.path(to.June.dir, "TV4_LVL2.csv"))
+
+
+## Troubleshoot ZC read in function ----------------------------------------
+
 
 # didnt work before update
 test <- getReadings(

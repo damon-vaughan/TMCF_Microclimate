@@ -8,7 +8,7 @@ full.tree.vec <- c("ET1", "ET2", "ET3", "ET4", "ET5", "ET6", "ET7", "ET8",
 no.ZC.vec.full <- c("ET1_MC1-16008", "ET1_MC2-15954", 
                     "ET6_MC1-15982", "ET6_MC2-15957", "ET6_MC3-15949",
                     "ETP1_ATM41-15899", "ETP2_ATM41-16041", 
-                    "FBP1_ATM41-15996", "FBP2_ATM41-15979", 
+                    "FBP1_ATM41-15996", "FBP2_ATM41-15979-15935", 
                     "TVP_ATM41-15917")
 
 pasture.vec <- c("ETP1", "ETP2", "FBP1", "FBP2", "TVP")
