@@ -254,14 +254,14 @@ shinyApp(ui, server)
 
 # Test server -------------------------------------------------------------
 
-testServer(server, {
-  session$setInputs(tree = "ETP1")
-  session$setInputs(station = c("S0", "S1", "S2", "S3", 
-                                "S4", "S5", "Cansoil"))
-  session$setInputs(Variable = "Precipitation")
-  session$setInputs(daterange = c(min = ymd("2022-09-01"),
-                              max = ymd("2022-12-01")))
-  session$setInputs(Time.res = "15 min")
-  test <<- print(dataInput3())
-})
+# testServer(server, {
+#   session$setInputs(tree = "ETP1")
+#   session$setInputs(station = c("S0", "S1", "S2", "S3", 
+#                                 "S4", "S5", "Cansoil"))
+#   session$setInputs(Variable = "Precipitation")
+#   session$setInputs(daterange = c(min = ymd("2022-09-01"),
+#                               max = ymd("2022-12-01")))
+#   session$setInputs(Time.res = "15 min")
+#   test <<- print(dataInput3())
+# })
 
