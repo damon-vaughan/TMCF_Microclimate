@@ -11,7 +11,7 @@ no.ZC.vec.full <- c("ET1_MC1-16008", "ET1_MC2-15954",
                     "FBP1_ATM41-15996", "FBP2_ATM41-15979-15935", 
                     "TVP_ATM41-15917")
 
-pasture.vec <- c("ETP1", "ETP2", "FBP1", "FBP2", "TVP")
+full.pasture.vec <- c("ETP1", "ETP2", "FBP1", "FBP2", "TVP")
 
 # Step 1: Import ZC data ---------------------------------------------
 
@@ -109,7 +109,12 @@ read_MC_noZC <- function(x){
 
 # Extract data from an individual port and save as nested dataframe that also holds the metadata about station number and instrument type
 # Portnum: Port number, typically passed in from the "MC_to_datalogger" function; df: raw data, also typically passed in from that function
+# Portnum <- 6
+# df <- read_csv(file.path("Microclimate_data_raw", str_c("FB1_MC1", ".csv")),
+#                show_col_types = F)
+
 MC_to_port <- function(Portnum, df){
+
   MCID <- unique(df$MC)
   TreeID <- unique(df$Tree)
   
@@ -117,19 +122,29 @@ MC_to_port <- function(Portnum, df){
     filter(MC.ID == str_c(TreeID, "_", MCID)) %>% 
     filter(Port == Portnum)
   
-  df %>% 
+  # Swap Port # for Station #. Need to keep some identifier to avoid column name duplication, but this accounts for sensors being moved to different ports 
+  swap_port_for_station <- function(x){
+    str_replace(x, "Port\\d+", pull(port.metadata, Station))
+  }
+  
+  df2 <- df %>% 
     select(Tree, MC, Timestamp, 
            which(str_detect(colnames(df), 
                             str_c("Port", as.character(Portnum))) == T)) %>% 
     mutate(Station = pull(port.metadata, Station)) %>% 
-    mutate(Instrument = pull(port.metadata, Instrument)) %>%  
+    mutate(Instrument = pull(port.metadata, Instrument)) %>% 
+    select(Tree, MC, Station, Instrument, Timestamp, everything()) %>% 
+    rename_with(swap_port_for_station)
+  
+  df3 <- df2  %>%  
     group_by(Tree, MC, Station, Instrument) %>%
     nest()
+  return(df3)
 }
 
 # Reads the raw data from a datalogger, and applies "MC_to_port" to all ports and creates a nested dataframe that carries the port metadata
 # MCnum: MCID of an individual datalogger (eg "FB1_MC1), typically passed in from "MC_to_tree"
-# MCnum <- "ET2_MC3"
+# MCnum <- "FB1_MC1"
 MC_to_datalogger <- function(MCnum){
   rawdat <- read_csv(file.path("Microclimate_data_raw", str_c(MCnum, ".csv")),
                      show_col_types = F)
@@ -146,7 +161,7 @@ MC_to_datalogger <- function(MCnum){
 
 # Applies "MC_to_datalogger" to all dataloggers in a tree and binds the results together
 # TreeID: Name of a tree
-TreeID <- "TV2"
+# TreeID <- "FB1"
 MC_to_tree <- function(TreeID){
   ZLs <- zl6.db %>% 
     filter(Location == TreeID) %>% 
@@ -158,10 +173,13 @@ MC_to_tree <- function(TreeID){
 
 # Filters the output of "MC_to_tree" to an individual station and outputs the df with all variables
 # StationNum: A station ID, such as "S1"; d.nested: A nested df output from "MC_to_tree"
+# StationNum <- "S2"
+# d.nested <- MC_to_tree("ET5")
 MC_to_station <- function(StationNum, d.nested){
   nst <- d.nested %>%
     filter(Station == StationNum) %>% 
     ungroup() 
+    
   df <- reduce(nst$data, full_join, by = "Timestamp") %>% 
     mutate(Tree = unique(nst$Tree),
            Station = unique(nst$Station)) %>% 
@@ -169,7 +187,42 @@ MC_to_station <- function(StationNum, d.nested){
   return(df)
 }
 
-fix_names <- function(x){
+# When sensors get moved to a new datalogger, it adds a whole bunch of rows with NAs, that then create duplicated timestamps when bound to the data from the previous datalogger.
+# d.nst: output from MC_to_tree, created in the first line of the for loop in Step 2
+fix_moved_sensors <- function(d.nst){
+  # Remove leading NA's for the newly moved instrument
+  extract_valid_values <- function(x, y){
+    x %>% filter(floor_date(Timestamp, "days") > y)
+  }
+  
+  d <- d.nst %>% 
+    left_join(moved.instruments, by = c("Tree", "Station", "Instrument", "MC")) %>% 
+    filter(!is.na(Timestamp)) %>% 
+    mutate(data = ifelse(Tracking == "MC.new", 
+                         map2(data, Timestamp, extract_valid_values), data)) %>% 
+    select(-Timestamp, -Tracking)
+  
+  suppressMessages(d2 <- d %>% 
+    group_by(Tree, Station, Instrument) %>% 
+    summarise(data = list(bind_rows(data))) %>% 
+    mutate(MC = "Changed"))
+  
+  d3 <- d.nst %>% 
+    anti_join(d2, by = c("Tree", "Station", "Instrument")) %>% 
+    bind_rows(d2)
+  
+  return(d3)
+}
+
+remove_station_from_header <- function(x){
+  v <- names(x)
+  no.station <- str_sub(v[4: length(v)], start = 4)
+  names(x) <- c(v[1:3], no.station)
+  return(x)
+}
+
+# x <- d.nst$data[[1]]
+remove_port_from_header <- function(x){
   v <- names(x)
   no.port <- str_sub(v[4: length(v)], start = 7)
   names(x) <- c(v[1:3], no.port)

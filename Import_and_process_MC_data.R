@@ -34,16 +34,18 @@ import.log <- read_csv(file.path("Microclimate_data_supporting",
 
 ## Vectors --------------------------------------------------------------
 
+removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2")
+
 ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
            "ET3_MC1", "ET3_MC2", "ET3_MC3",
            "ET4_MC1", "ET4_MC2", "ET4_MC3",
-           "ET5_MC1", "ET5_MC2", "ET5_MC3",
+           "ET5_MC1", "ET5_MC3",
            "ET7_MC1", "ET7_MC2", "ET7_MC3",
            "ET8_MC1", "ET8_MC2", "ET8_MC3") 
 
-FB.vec <- c("FB1_MC1", "FB1_MC2", "FB1_MC3",
+FB.vec <- c("FB1_MC1", "FB1_MC3",
            "FB2_MC1", "FB2_MC2", "FB2_MC3",
-           "FB3_MC1", "FB3_MC2", "FB3_MC3",
+           "FB3_MC1", "FB3_MC3",
            "FB4_MC1", "FB4_MC2", "FB4_MC3",
            "FB5_MC1", "FB5_MC2", "FB5_MC3",
            "FB6_MC1", "FB6_MC2", "FB6_MC3",
@@ -58,7 +60,7 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2023-11-30 23:23:59"
+endDL <- "2023-12-31 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
@@ -151,6 +153,7 @@ for(i in MC.vec){
   
   write_csv(import.log, file.path("Microclimate_data_supporting",
                                   "zl6_import_log.csv"))
+}
 
 # Step 1b -------------------------------------------------------------
 zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
@@ -202,7 +205,10 @@ str(test)
 # ZC/noZC are both treated the same here
 
 library(needs)
-needs(tidyverse)
+needs(tidyverse, readxl)
+
+source("Functions_Microclimate.R")
+options(readr.show_col_types = FALSE)
 
 zl6.db.long <- read_csv(file.path("Microclimate_data_supporting",
                              "zl6_database_long.csv"))
@@ -210,10 +216,14 @@ zl6.db.long <- read_csv(file.path("Microclimate_data_supporting",
 zl6.db <- read_csv(file.path("Microclimate_data_supporting",
                              "zl6_database.csv"))
 
+moved.instruments <- read_excel(file.path("Microclimate_data_supporting",
+                                          "zl6_moved_instruments.xlsx")) %>% 
+  pivot_longer(4:5, names_to = "Tracking", values_to = "MC")
+
 ## Loop, trees ------------------------------------------------------------
 
 tree.vec <- full.tree.vec
-tree.vec <- c("FB5", "FB6", "FB7", "FB8", "TV1", "TV2", "TV3", "TV4")
+# tree.vec <- c("FB5", "FB6", "FB7", "FB8", "TV1", "TV2", "TV3", "TV4")
 
 duplicate.log <- data.frame(
   Tree = NA, Station = NA, Timestamp = NA, Solar = NA, Atmos_pressure = NA, 
@@ -221,16 +231,28 @@ duplicate.log <- data.frame(
   LW_minutes = NA, Wind_speed = NA, Wind_direction = NA, Gust_speed = NA,
   Timestamp2 = NA, EpiMoisture = NA, EpiTemp = NA) 
 
-i <- MCvec[4]
+# i <- tree.vec[9]
 for(i in tree.vec){
   
-  d.nst <- MC_to_tree(i)
+  d.nst <- MC_to_tree(i) 
   
-  station.list <- unique(d.nst$Station)
+  # Moving instrument to new datalogger causes a duplicated record with filler NAs
+  suppressMessages(dupe.check <- d.nst %>%
+    select(-data) %>% 
+    group_by(Tree, Station, Instrument) %>% 
+    summarise(count = length(Station)) %>% 
+    filter(count != 1))
+  if(nrow(dupe.check != 0)){
+    d.nst2 <- fix_moved_sensors(d.nst)
+  } else {
+    d.nst2 <- d.nst
+  }
   
-  d.list <- lapply(station.list, MC_to_station, d.nested = d.nst) 
+  stations <- unique(d.nst2$Station)
   
-  d.list2 <- lapply(d.list, fix_names)
+  d.list <- lapply(stations, MC_to_station, d.nested = d.nst2) 
+  
+  d.list2 <- lapply(d.list, remove_station_from_header)
   
   d <- d.list2 %>% 
     bind_rows() %>% 
@@ -277,7 +299,7 @@ for(i in tree.vec){
 
 ## Loop, pasture stations --------------------------------------
 
-
+pasture.vec <- full.pasture.vec
 # pasture.vec <- "TVP"
 for(i in pasture.vec){
   
@@ -286,7 +308,8 @@ for(i in pasture.vec){
     mutate(Station = "S0") %>% 
     select(-MC) %>% 
     select(Tree, Station, Timestamp, everything()) %>% 
-    fix_names()
+    remove_port_from_header()
+
   
   d2 <- d %>% 
     mutate(Wetness = 1.54 * exp(0.0058 * LWS_Count)) %>%
@@ -308,6 +331,7 @@ library(needs)
 needs(tidyverse, here, lubridate)
 
 tree.vec <- full.tree.vec
+pasture.vec <- full.pasture.vec
 
 MC.vec <- c(tree.vec, pasture.vec)
 # MC.vec <- JulyProbs

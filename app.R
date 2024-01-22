@@ -1,9 +1,12 @@
 library(needs)
 needs(tidyverse, shiny, lubridate)
 
+source("app_functions_MC.R")
+options(readr.show_col_types = FALSE)
+
 import.log <- read_csv(file.path("Microclimate_data_supporting",
                                  "zl6_import_log.csv"), show_col_types = F)
-max.date = max(import.log$Last.import, na.rm = T)
+max.date <- max(import.log$Last.import, na.rm = T)
 
 # UI ----------------------------------------------------------------------
 
@@ -12,21 +15,38 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
-      helpText("Cool stuff you can do:"),
-      helpText("Move slider to select date range"),
-      helpText("Hover pointer over plot to display the exact timestamp"),
-      helpText("Zoom plots by clicking and dragging a square over the desired region"),
-      helpText("Download data to a folder on your computer"),
-      
-      sliderInput("dates", 
+      sliderInput("daterange", 
                   label = h4("Select date range"), 
                   min = ymd("2022-09-01"), 
                   max = as_date(max.date), 
                   value = c(ymd("2022-09-01"), max.date)),
-      
+      fluidRow(radioButtons("fixed.y", inline = T,
+                            label = h4("Fix y-axis?"),
+                            choices = c("No", "Coarse", "Fine"),
+                            selected = "No")),
+      fluidRow(sliderInput("y.coarse",
+                           label = h4("Select coarse y-axis range"),
+                           min = 0,
+                           max = 1500,
+                           value = c(0, 1500))),
       fluidRow(
-        column(2,
-               radioButtons("Tree.view",
+        column(6,
+               sliderInput("y.fine.min",
+                           label = h4("Select fine y-axis min"),
+                           min = 0,
+                           max = 100,
+                           value = 0,
+                           step = 0.5)),
+        column(6,
+               sliderInput("y.fine.range",
+                           label = h4("Select fine y-axis range"),
+                           min = 0,
+                           max = 20,
+                           value = 0,
+                           step = 0.5))),
+      fluidRow(
+        column(3,
+               radioButtons("tree",
                             label = h4("Select tree"),
                             choices = c("ET1", "ET2", "ET3", "ET4",
                                         "ET5", "ET6", "ET7", "ET8",
@@ -35,13 +55,14 @@ ui <- fluidPage(
                                         "TV1", "TV2", "TV3", "TV4",
                                         "ETP1", "ETP2", "FBP1", "FBP2", "TVP"),
                             selected = "ET1")),
-        column(2, offset = 1,
+        column(3, offset = 1,
                fluidRow(
-                 checkboxGroupInput("Station.view",
+                 checkboxGroupInput("station",
                               label = h4("Select Station"),
                               choices = c("S0", "S1", "S2", "S3", 
                                           "S4", "S5", "Cansoil"),
-                              selected = c("S0", "S1")),
+                              selected = c("S0", "S1", "S2", "S3", 
+                                           "S4", "S5", "Cansoil")),
                  radioButtons("Variable",
                               label = h4("Select variable"),
                               choices = c("Solar", "Temp", "RH", "Atmos_pressure",
@@ -49,27 +70,41 @@ ui <- fluidPage(
                                           "Wind_speed", "Gust_speed", "Precipitation",
                                           "Precip_max", "EpiMoisture", "EpiTemp"),
                               selected = "Solar"),
-                 radioButtons("Time.res",
-                              label = h4("Select time resolution"),
-                              choices = c("15 Min", "Hourly", "Daily", "Weekly"),
-                              selected = "15 Min")))),
+                 )),
+        column(3, offset = 1,
+               radioButtons("Time.res",
+                            label = h4("Select time resolution"),
+                            choices = c("15 Min", "Hourly", "Daily", "Weekly"),
+                            selected = "15 Min"))),
       titlePanel("Download options"),
       fluidRow(
-        radioButtons("Time.format",
-                     label = h4("Select time format"),
-                     choices = list("ISO", "Excel_ready"),
-                     selected = "ISO")),
+        column(5,
+               radioButtons("Time.format",
+                            label = h4("Select time format"),
+                            choices = list("ISO", "Excel_ready"),
+                            selected = "ISO")),
+        column(5,
+               radioButtons("All.variables",
+                            label = h4("Download all variables?"),
+                            choices = list("All", "Only_selected"),
+                            selected = "Only_selected"))
+               ),
       downloadButton("downloadData", "Download")
     ),
     
     mainPanel(
-      "Graph shows data until:",
-      verbatimTextOutput("max.date.out"),
-      plotOutput("plot",
-                         hover = "plot_hover",
-                         brush = "plot_brush"),
-              verbatimTextOutput("plot_hoverinfo"),
-              plotOutput("plot_brushedpoints"))
+      tabsetPanel(
+        type = "tabs",
+        tabPanel("Plot",
+                 "Graph shows data until:",
+                 verbatimTextOutput("max.date.out"),
+                 plotOutput("plot",
+                            click = "plot_click",
+                            brush = "plot_brush"),
+                 verbatimTextOutput("plot_clickinfo"),
+                 plotOutput("plot_brushedpoints")),
+        tabPanel("Data", tableOutput("data1"), tableOutput("data2")),
+        tabPanel("Summary", tableOutput("summary"))))
   )
 )
 
@@ -77,37 +112,18 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # dataInput <- reactive({
-  #   if(input$Tree.view %in% FullTreeVec){
-  #     LVL2_trees %>%
-  #       filter(Tree == input$Tree.view) %>%
-  #       filter(Station == input$Station.view) %>%
-  #       filter(Timestamp >= as.POSIXct(input$dates[1], tz = "UTC")  &
-  #                Timestamp <= as.POSIXct(input$dates[2], tz = "UTC")) %>%
-  #       pivot_longer(4:13, names_to = "Variable", values_to = "Measure")
-  #   } else if(input$Tree.view %in% PastureVec){
-  #     LVL2_pasture %>%
-  #       filter(Tree == input$Tree.view) %>%
-  #       filter(Timestamp >= as.POSIXct(input$dates[1], tz = "UTC")  &
-  #                Timestamp <= as.POSIXct(input$dates[2], tz = "UTC")) %>%
-  #       pivot_longer(4:15, names_to = "Variable", values_to = "Measure")
-  #   }
-  # })
   dataInput <- reactive({
-    read_csv(file.path("Microclimate_data_L3",
-                     str_c(input$Tree.view, "_MC_L3.csv")),
-           show_col_types = F)
+    read_csv(file.path("Microclimate_data_L3", str_c(input$tree, "_MC_L3.csv"))) %>% 
+      filter(Tree == input$tree) %>%
+      filter(Timestamp >= as.POSIXct(input$daterange[1], tz = "UTC")  &
+               Timestamp <= as.POSIXct(input$daterange[2], tz = "UTC"))
   })
-  
   
   dataInput2 <- reactive({
     dataInput() %>% 
-      filter(Tree == input$Tree.view) %>%
-            filter(Station == input$Station.view) %>%
-            filter(Timestamp >= as.POSIXct(input$dates[1], tz = "UTC")  &
-                     Timestamp <= as.POSIXct(input$dates[2], tz = "UTC")) %>%
-            pivot_longer(4:ncol(dataInput()), 
-                         names_to = "Variable", values_to = "Measure") %>% 
+      filter(Station %in% input$station) %>%
+      pivot_longer(4:ncol(dataInput()), 
+                   names_to = "Variable", values_to = "Measure") %>% 
       filter(Variable == input$Variable)
   })
   
@@ -117,23 +133,28 @@ server <- function(input, output, session) {
     } else if(input$Time.res == "Hourly"){
       dataInput2() %>% 
         group_by(Tree, Station, Timestamp = floor_date(Timestamp, "hour"), Variable) %>% 
-        summarise(across(where(is.numeric), ~mean(., na.rm = T)))
+        summarise(across(where(is.numeric), ~mean(., na.rm = T))) %>% 
+        ungroup()
     } else if(input$Time.res == "Daily"){
       dataInput2() %>% 
         group_by(Tree, Station, Timestamp = floor_date(Timestamp, "day"), Variable) %>% 
-        summarise(across(where(is.numeric), ~mean(., na.rm = T)))
+        summarise(across(where(is.numeric), ~mean(., na.rm = T))) %>% 
+        ungroup()
     } else if(input$Time.res == "Weekly"){
       dataInput2() %>% 
         group_by(Tree, Station, Timestamp = floor_date(Timestamp, "week"), Variable) %>% 
-        summarise(across(where(is.numeric), ~mean(., na.rm = T)))}
+        summarise(across(where(is.numeric), ~mean(., na.rm = T))) %>% 
+        ungroup()}
   })
-  
+
+## Plots -------------------------------------------------------------------
+    
   output$max.date.out <- renderText({
-    as.character(max(dataInput3()$Timestamp))
+    as.character(max(dataInput3()$Timestamp, na.rm = T))
   })
   
   output$plot <- renderPlot({
-    ggplot(dataInput3()) +
+    p <- ggplot(dataInput3()) +
       geom_line(aes(x = Timestamp, y = Measure, color = Station)) +
       theme_bw() +
       theme(axis.title.x = element_blank()) +
@@ -142,15 +163,25 @@ server <- function(input, output, session) {
             axis.title.y = element_text(size = 24),
             axis.text.y = element_text(size = 20),
             plot.title = element_text(size = 24)) +
-      ggtitle(str_c(input$Tree.view, "_", input$Station.view, "_", input$Variable))}) 
+      ggtitle(str_c(input$tree, "_", input$Variable))
+    if(input$fixed.y == "Coarse"){
+      p <- p +
+        ylim(input$y.coarse[1], input$y.coarse[2])
+    }
+    if(input$fixed.y == "Fine"){
+      p <- p +
+        ylim(input$y.fine.min, input$y.fine.min + input$y.fine.range)
+    }
+    p
+    }) 
   
-  output$plot_hoverinfo <- renderPrint({
-    val <- nearPoints(dataInput2(), input$plot_hover, maxpoints = 1)
+  output$plot_clickinfo <- renderPrint({
+    val <- nearPoints(dataInput3(), input$plot_click, maxpoints = 1)
     unique(val$Timestamp)
   })
   
   output$plot_brushedpoints <- renderPlot({
-    dat <- brushedPoints(dataInput2(), input$plot_brush)
+    dat <- brushedPoints(dataInput3(), input$plot_brush)
     if (nrow(dat) == 0)
       return()
     ggplot(dat) +
@@ -163,24 +194,56 @@ server <- function(input, output, session) {
             axis.text.y = element_text(size = 20),
             plot.title = element_text(size = 24)) 
   })
+
+
+## Data and summary --------------------------------------------------------
+
+  data.for.summaries <- reactive({
+    dataInput3() %>% 
+      mutate(Timestamp = as.character(Timestamp)) 
+  })
   
-  dataDL <- reactive({
-    if(input$Time.format == "ISO"){
+  output$data1 <- renderTable({
+    head(data.for.summaries())
+  })
+  
+  output$data2 <- renderTable({
+    tail(data.for.summaries())
+  })
+  
+  output$summary <- renderTable({
+    summarise_MC(data.for.summaries())
+  })
+
+## Download options --------------------------------------------------------
+
+  data.for.download <- reactive({
+    if(input$All.variables == "All.variables"){
+      dataInput()
+    } else {
       dataInput3()
-    } else if(input$Time.format == "Excel_ready"){
-      dataInput3() %>%
+    } 
+    })
+  
+  data.for.download2 <- reactive({
+    if(input$Time.format == "Excel_ready"){
+      data.for.download() %>% 
         mutate(Timestamp = as.character(Timestamp))
+    } else {
+      data.for.download()
     }
   })
   
   output$downloadData <- downloadHandler(
     filename = function() {
-      str_c(str_c(input$Tree.view, input$Station.view, input$Variable,
-                  input$dates[1], input$dates[2], sep = "_"),
+      str_c(str_c(input$tree,
+                  str_sub(as.character(input$daterange[1]), start = 1, end = 10), 
+                  str_sub(as.character(input$daterange[2]), start = 1, end = 10), 
+                  sep = "_"),
             ".csv")
     },
     content <-  function(file) {
-      write_csv(dataDL(), file)
+      write_csv(data.for.download2(), file)
     }
   )
 }
@@ -191,13 +254,14 @@ shinyApp(ui, server)
 
 # Test server -------------------------------------------------------------
 
-# testServer(server, {
-#   session$setInputs(Tree.view = "FB1")
-#   session$setInputs(Station.view = "S1")
-#   session$setInputs(Variable = "Solar")
-#   session$setInputs(dates = c(min = ymd("2022-09-01"),
-#                               max = ymd("2022-12-01")))
-#   session$setInputs(Time.res = "15 min")
-#   print(dataInput3())
-# })
+testServer(server, {
+  session$setInputs(tree = "ETP1")
+  session$setInputs(station = c("S0", "S1", "S2", "S3", 
+                                "S4", "S5", "Cansoil"))
+  session$setInputs(Variable = "Precipitation")
+  session$setInputs(daterange = c(min = ymd("2022-09-01"),
+                              max = ymd("2022-12-01")))
+  session$setInputs(Time.res = "15 min")
+  test <<- print(dataInput3())
+})
 
