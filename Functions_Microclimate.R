@@ -173,8 +173,8 @@ MC_to_tree <- function(TreeID){
 
 # Filters the output of "MC_to_tree" to an individual station and outputs the df with all variables
 # StationNum: A station ID, such as "S1"; d.nested: A nested df output from "MC_to_tree"
-# StationNum <- "S2"
-# d.nested <- MC_to_tree("ET5")
+# StationNum <- "S1"
+# d.nested <- MC_to_tree("ET8")
 MC_to_station <- function(StationNum, d.nested){
   nst <- d.nested %>%
     filter(Station == StationNum) %>% 
@@ -219,6 +219,24 @@ remove_station_from_header <- function(x){
   no.station <- str_sub(v[4: length(v)], start = 4)
   names(x) <- c(v[1:3], no.station)
   return(x)
+}
+
+# Removes all but the last duplicated timestamp record.
+# x <- d.nst$data[[6]]
+fix_duplicate_timestamps <- function(x){
+  x2 <- x %>% 
+    distinct()
+  
+  dupe.time <- x2  %>%
+    mutate(Timestamp2 = lag(Timestamp)) %>% 
+    ungroup() %>% 
+    filter(Timestamp == Timestamp2) %>% 
+    slice(-1)
+  
+  suppressMessages(x3 <- x2 %>% 
+    anti_join(dupe.time))
+  
+  return(x3)
 }
 
 # x <- d.nst$data[[1]]

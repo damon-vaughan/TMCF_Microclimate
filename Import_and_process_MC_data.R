@@ -164,7 +164,7 @@ zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
 
 no.ZC.vec <- no.ZC.vec.full
 
-i <- no.ZC.vec[9]
+i <- no.ZC.vec[2]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -218,6 +218,7 @@ zl6.db <- read_csv(file.path("Microclimate_data_supporting",
 
 moved.instruments <- read_excel(file.path("Microclimate_data_supporting",
                                           "zl6_moved_instruments.xlsx")) %>% 
+  select(Tree, Station, Instrument, MC.old, MC.new, Timestamp) %>% 
   pivot_longer(4:5, names_to = "Tracking", values_to = "MC")
 
 ## Loop, trees ------------------------------------------------------------
@@ -225,74 +226,59 @@ moved.instruments <- read_excel(file.path("Microclimate_data_supporting",
 tree.vec <- full.tree.vec
 # tree.vec <- c("FB5", "FB6", "FB7", "FB8", "TV1", "TV2", "TV3", "TV4")
 
-duplicate.log <- data.frame(
-  Tree = NA, Station = NA, Timestamp = NA, Solar = NA, Atmos_pressure = NA, 
-  RH = NA, VPD = NA, Temp = NA, LWS_Count = NA, LW_minutes_H = NA, 
-  LW_minutes = NA, Wind_speed = NA, Wind_direction = NA, Gust_speed = NA,
-  Timestamp2 = NA, EpiMoisture = NA, EpiTemp = NA) 
+# duplicate.log <- data.frame(
+#   Tree = NA, Station = NA, Timestamp = NA, Solar = NA, Atmos_pressure = NA, 
+#   RH = NA, VPD = NA, Temp = NA, LWS_Count = NA, LW_minutes_H = NA, 
+#   LW_minutes = NA, Wind_speed = NA, Wind_direction = NA, Gust_speed = NA,
+#   Timestamp2 = NA, EpiMoisture = NA, EpiTemp = NA) 
 
-# i <- tree.vec[9]
+# i <- tree.vec[1]
 for(i in tree.vec){
   
   d.nst <- MC_to_tree(i) 
   
+  d.nst2 <- d.nst %>% 
+    mutate(data = map(data, fix_duplicate_timestamps))
+  
   # Moving instrument to new datalogger causes a duplicated record with filler NAs
-  suppressMessages(dupe.check <- d.nst %>%
+  suppressMessages(dupe.check <- d.nst2 %>%
     select(-data) %>% 
     group_by(Tree, Station, Instrument) %>% 
     summarise(count = length(Station)) %>% 
     filter(count != 1))
   if(nrow(dupe.check != 0)){
-    d.nst2 <- fix_moved_sensors(d.nst)
+    d.nst3 <- fix_moved_sensors(d.nst2)
   } else {
-    d.nst2 <- d.nst
+    d.nst3 <- d.nst2
   }
   
-  stations <- unique(d.nst2$Station)
+  stations <- unique(d.nst3$Station)
   
-  d.list <- lapply(stations, MC_to_station, d.nested = d.nst2) 
+  d.list <- lapply(stations, MC_to_station, d.nested = d.nst3) 
   
   d.list2 <- lapply(d.list, remove_station_from_header)
   
   d <- d.list2 %>% 
     bind_rows() %>% 
-    arrange(Tree, Station, Timestamp) %>% 
     select(-ATM22_temp, -ATM22_Xaxis, 
-           -ATM22_Yaxis)
+           -ATM22_Yaxis) %>% 
+    arrange(Tree, Station, Timestamp) 
   
-  # Fixes duplicated timestamp issue. Slow but it works
-  # d2 <- d  %>%
-  #   group_by(Tree, Station, Timestamp) %>% 
-  #   summarise(across(where(is.numeric), ~mean(., na.rm = T))) %>% 
-  #   mutate(across(where(is.numeric), ~ifelse(is.nan(.), NA, .))) %>% 
-  #   ungroup()
-
-  # A quicker fix that just takes the last one, and logs which are dropped
-  duplicates <- d  %>%
-    group_by(Tree, Station) %>% 
-    mutate(Timestamp2 = lag(Timestamp)) %>% 
-    ungroup() %>% 
-    filter(Timestamp == Timestamp2)
-  duplicate.log <- duplicate.log %>% 
-    bind_rows(duplicates)
-  
+  # Get rid of LW_Minutes so it looks like the preJune. Maintain LW_Minutes_H
   d2 <- d %>% 
-    anti_join(duplicates)
-  
-  d3 <- d2 %>% 
     mutate(Wetness = 1.54 * exp(0.0058 * LWS_Count)) %>% 
-    select(-LWS_Count) %>% 
+    select(-LWS_Count, -LW_minutes) %>% 
     correct_common_errors()
   
   # Calculate VPD where necessary (noZC)
-  if(!("VPD" %in% colnames(d3))){
-    d4 <- d3 %>% 
+  if(!("VPD" %in% colnames(d2))){
+    d3 <- d2 %>% 
       mutate(VPD = calc_VPD(0.611, 17.502, 240.97, d2)) 
   } else {
-    d4 <- d3
+    d3 <- d2
   }
 
-  write_csv(d4, file.path("Microclimate_data_L2",
+  write_csv(d3, file.path("Microclimate_data_L2",
                               str_c(i, "_MC", "_L2.csv")))
   cat("saved data for: ", i, "\n")
 }
@@ -317,7 +303,7 @@ for(i in pasture.vec){
     select(-Lightning_count, -Lightning_distance, -ATM22_Yaxis, 
            -ATM22_Xaxis, -ATM41_SensorTemp, -LW_minutes_H, 
            -Drop1, -Drop2, -Drop3, -Drop4,
-           -LWS_Count)
+           -LWS_Count, -LW_minutes)
   
   write_csv(d2, file.path("Microclimate_data_L2",
                               str_c(i, "_MC", "_L2.csv")))
