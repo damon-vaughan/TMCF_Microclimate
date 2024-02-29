@@ -5,8 +5,14 @@ source("app_functions_MC.R")
 options(readr.show_col_types = FALSE)
 
 import.log <- read_csv(file.path("Microclimate_data_supporting",
-                                 "zl6_import_log.csv"), show_col_types = F)
+                                 "zl6_import_log.csv"))
 max.date <- max(import.log$Last.import, na.rm = T)
+
+zl6 <- read_csv(file.path("Microclimate_data_supporting",
+                          "zl6_database_long.csv"))
+
+instruments <- read_csv(file.path("Microclimate_data_supporting", "Meter_instruments.csv"))
+
 
 # UI ----------------------------------------------------------------------
 
@@ -18,8 +24,8 @@ ui <- fluidPage(
       sliderInput("daterange", 
                   label = h4("Select date range"), 
                   min = ymd("2022-09-01"), 
-                  max = as_date(max.date), 
-                  value = c(ymd("2022-09-01"), max.date)),
+                  max = as_date(Sys.time()), 
+                  value = c(ymd("2022-09-01"), Sys.time())),
       fluidRow(radioButtons("fixed.y", inline = T,
                             label = h4("Fix y-axis?"),
                             choices = c("No", "Coarse", "Fine"),
@@ -105,6 +111,8 @@ ui <- fluidPage(
                             brush = "plot_brush"),
                  verbatimTextOutput("plot_clickinfo"),
                  plotOutput("plot_brushedpoints")),
+        tabPanel("Wiring", tableOutput("wiring1"), tableOutput("wiring2"),
+                 tableOutput("wiring3"), tableOutput("wiring4")),
         tabPanel("Data", tableOutput("data1"), tableOutput("data2")),
         tabPanel("Summary", tableOutput("summary"))))
   )
@@ -150,10 +158,6 @@ server <- function(input, output, session) {
   })
 
 ## Plots -------------------------------------------------------------------
-    
-  output$max.date.out <- renderText({
-    as.character(max(dataInput3()$Timestamp, na.rm = T))
-  })
   
   output$plot <- renderPlot({
     p <- ggplot(dataInput3()) +
@@ -197,9 +201,47 @@ server <- function(input, output, session) {
             plot.title = element_text(size = 24)) 
   })
 
+## Data and tables --------------------------------------------------------
 
-## Data and summary --------------------------------------------------------
-
+  output$max.date.out <- renderText({
+    as.character(max(dataInput3()$Timestamp, na.rm = T))
+  })
+  
+  locate.datalogger <- reactive({
+    inst <- instruments %>%
+      filter(Variable == input$Variable) %>%
+      pull(Instrument)
+    zl6 %>%
+      filter(Location == input$tree & Station %in% input$station &
+               Instrument == inst) %>% 
+      select(MC.ID) %>% 
+      distinct()
+  })
+  
+  output$wiring1 <- renderTable({
+    instruments %>%
+      filter(Variable == input$Variable)
+  })
+ 
+  output$wiring2 <- renderTable({
+    locate.datalogger() 
+  })
+   
+  output$wiring3 <- renderTable({
+    zl6 %>%
+      filter(Location == input$tree & MC.ID %in% locate.datalogger()$MC.ID) %>% 
+      select(-ZL.ID, -Location) %>% 
+      mutate(Port = as.numeric(Port))
+  })
+  
+  output$wiring4 <- renderTable({
+    inst <- instruments %>%
+      filter(Variable == input$Variable) %>% 
+      pull(Instrument)
+    instruments %>% 
+      filter(Instrument == inst)
+  })
+  
   data.for.summaries <- reactive({
     dataInput3() %>% 
       mutate(Timestamp = as.character(Timestamp)) 
@@ -256,14 +298,17 @@ shinyApp(ui, server)
 
 # Test server -------------------------------------------------------------
 
-# testServer(server, {
-#   session$setInputs(tree = "ETP1")
-#   session$setInputs(station = c("S0", "S1", "S2", "S3", 
-#                                 "S4", "S5", "Cansoil"))
-#   session$setInputs(Variable = "Precipitation")
-#   session$setInputs(daterange = c(min = ymd("2022-09-01"),
-#                               max = ymd("2022-12-01")))
-#   session$setInputs(Time.res = "15 min")
-#   test <<- print(dataInput3())
-# })
+testServer(server, {
+  session$setInputs(tree = "ET1")
+  session$setInputs(station = c(
+    "S0", "S1", "S2", "S3",
+                                "S4" 
+    # "S5", "Cansoil"
+    ))
+  session$setInputs(Variable = "Solar")
+  session$setInputs(daterange = c(min = ymd("2022-09-01"),
+                              max = ymd("2023-12-01")))
+  session$setInputs(Time.res = "15 min")
+  test <<- print(data.for.wiring())
+})
 

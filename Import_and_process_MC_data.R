@@ -34,7 +34,7 @@ import.log <- read_csv(file.path("Microclimate_data_supporting",
 
 ## Vectors --------------------------------------------------------------
 
-removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2")
+removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2", "ET2_MC3", "ET6_MC3")
 
 ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
            "ET3_MC1", "ET3_MC2", "ET3_MC3",
@@ -60,12 +60,12 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2023-12-31 23:23:59"
+endDL <- "2024-01-31 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
 MC.vec <- TV.vec
-# i <- "FB3_MC3"
+# i <- "ET2_MC1"
 for(i in MC.vec){
   
   # Have to read and write this for each element 
@@ -164,7 +164,7 @@ zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
 
 no.ZC.vec <- no.ZC.vec.full
 
-i <- no.ZC.vec[2]
+# i <- no.ZC.vec[2]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -195,9 +195,9 @@ for(i in no.ZC.vec){
   cat("Imported from: ", MC.ID, "\n")
 }
 
-test <- read_csv(filename.in.raw, 
-                 show_col_types = F)
-str(test)
+# test <- read_csv(filename.in.raw, 
+#                  show_col_types = F)
+# str(test)
 
 
 # Step 2: Switch to Station-based organization ----------------------------
