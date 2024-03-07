@@ -34,7 +34,8 @@ import.log <- read_csv(file.path("Microclimate_data_supporting",
 
 ## Vectors --------------------------------------------------------------
 
-removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2", "ET2_MC3", "ET6_MC3")
+removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2", "ET2_MC3", "ET6_MC3",
+                 "FB4_MC1", "FB4_MC2", "FB4_MC3")
 
 ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
            "ET3_MC1", "ET3_MC2", "ET3_MC3",
@@ -46,7 +47,6 @@ ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
 FB.vec <- c("FB1_MC1", "FB1_MC3",
            "FB2_MC1", "FB2_MC2", "FB2_MC3",
            "FB3_MC1", "FB3_MC3",
-           "FB4_MC1", "FB4_MC2", "FB4_MC3",
            "FB5_MC1", "FB5_MC2", "FB5_MC3",
            "FB6_MC1", "FB6_MC2", "FB6_MC3",
            "FB7_MC1", "FB7_MC2", "FB7_MC3",
@@ -60,7 +60,7 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2024-01-31 23:23:59"
+endDL <- "2024-02-29 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
@@ -224,7 +224,7 @@ moved.instruments <- read_excel(file.path("Microclimate_data_supporting",
 ## Loop, trees ------------------------------------------------------------
 
 tree.vec <- full.tree.vec
-# tree.vec <- c("FB5", "FB6", "FB7", "FB8", "TV1", "TV2", "TV3", "TV4")
+# tree.vec <- c("ET8")
 
 # duplicate.log <- data.frame(
 #   Tree = NA, Station = NA, Timestamp = NA, Solar = NA, Atmos_pressure = NA, 
@@ -367,6 +367,19 @@ for(i in MC.vec){
 
 # Troubleshooting and extra ------------------------------------
 
+
+## Basic graphs ------------------------------------------------------------
+
+d <- read_csv(file.path("Microclimate_data_L3", "ET8_MC_L3.csv"))
+str(d)
+
+d2 <- d %>% 
+  filter(Station == "Cansoil")
+
+ggplot(d2) +
+  geom_line(aes(x = Timestamp, y = soil_EpiTemp)) +
+  theme_bw()
+
 ## Adding Cansoil to the pre-June data -------------------------------------
 # First, manually download from ZC. Then save Excel files as UTF csv, and clean up a little bit. Then edit the name to not have MC number.
 # Save over the original. To find the original original, look in Archive for the preJune MC original folder
@@ -374,19 +387,22 @@ for(i in MC.vec){
 to.June.dir <- file.path("Microclimate_data_L2", "Microclimate_toJune2023_L2")
 
 FB2 <- read_csv(file.path(to.June.dir, "FB2_LVL2.csv"))
-FB2.Cansoil <- read_csv(file.path(to.June.dir, "Epi_sensors", "FB2_MC1.csv"),
+FB2.Cansoil <- read_csv(file.path(to.June.dir, "Epi_sensors", "FB2.csv"),
                         na = "#N/A") %>% 
   mutate(Timestamp = mdy_hm(Timestamp))
 
 x <- "FB2"
 add_preJune_cansoil <- function(x){
-  d <- read_csv(file.path(to.June.dir, str_c(x, "_LVL2.csv")))
-  Cansoil <- read_csv(file.path(to.June.dir, "Epi_sensors", 
+  # Drop the Cansoil stations to erase previous faulty additions
+  d <- read_csv(file.path(to.June.dir, str_c(x, "_LVL2.csv"))) %>% 
+    filter(Station != "Cansoil") %>% 
+    select(-EpiMoisture, -EpiTemp)
+  CS <- read_csv(file.path(to.June.dir, "Epi_sensors", 
                                 str_c(x, ".csv")),
                       na = "#N/A") %>% 
     mutate(Timestamp = mdy_hm(Timestamp)) %>% 
-    mutate(Tree = x, Station = "Cansoil")
-  out <- bind_rows(d, Cansoil)
+    mutate(Tree = x, Station = "CS")
+  out <- bind_rows(d, CS)
   return(out)
   }  
 
