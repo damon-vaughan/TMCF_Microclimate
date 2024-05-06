@@ -63,12 +63,17 @@ ui <- fluidPage(
                             selected = "ET1")),
         column(3, offset = 1,
                fluidRow(
-                 checkboxGroupInput("station",
+                 # checkboxGroupInput("station",
+                 #              label = h4("Select Station"),
+                 #              choices = c("S0", "S1", "S2", "S3", 
+                 #                          "S4", "S5", "CS"),
+                 #              selected = c("S0", "S1", "S2", "S3", 
+                 #                           "S4", "S5", "CS")),
+                 radioButtons("station",
                               label = h4("Select Station"),
                               choices = c("S0", "S1", "S2", "S3", 
                                           "S4", "S5", "CS"),
-                              selected = c("S0", "S1", "S2", "S3", 
-                                           "S4", "S5", "CS")),
+                              selected = c("S1")),
                  radioButtons("Variable",
                               label = h4("Select variable"),
                               choices = c("Solar", "Temp", "RH", "Atmos_pressure",
@@ -262,7 +267,7 @@ server <- function(input, output, session) {
 ## Download options --------------------------------------------------------
 
   data.for.download <- reactive({
-    if(input$All.variables == "All.variables"){
+    if(input$All.variables == "All"){
       dataInput()
     } else {
       dataInput3()
@@ -301,14 +306,17 @@ shinyApp(ui, server)
 # testServer(server, {
 #   session$setInputs(tree = "ET1")
 #   session$setInputs(station = c(
-#     "S0", "S1", "S2", "S3",
-#                                 "S4" 
+#     # "S0", 
+#     "S1"
+#     # , 
+#     # "S2", "S3",
+#                                 # "S4"
 #     # "S5", "Cansoil"
 #     ))
 #   session$setInputs(Variable = "Solar")
 #   session$setInputs(daterange = c(min = ymd("2022-09-01"),
 #                               max = ymd("2023-12-01")))
 #   session$setInputs(Time.res = "15 min")
-#   test <<- print(data.for.wiring())
+#   test <<- print(dataInput3())
 # })
 

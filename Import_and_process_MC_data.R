@@ -10,12 +10,22 @@ source("Functions_Microclimate.R")
 
 options(readr.show_col_types = FALSE)
 
+# Desktop:
+# setZentracloudOptions(
+#   cache_dir = NULL,
+#   # cache_dir = "C:/Users/User/AppData/Local/R/zentracloud",
+#   token = "2f197f0980ac6da7c6bc2922f48f6ac291ca1086"
+#   , domain = "default"
+# )
+
+# Laptop
 setZentracloudOptions(
   cache_dir = "C:/Users/vaug8/AppData/Local/R/cache/R/zentracloud",
   token = "2f197f0980ac6da7c6bc2922f48f6ac291ca1086"
   , domain = "default"
 )
 # getZentracloudOptions()
+
 # clearCache(file_age = 0L)
 
 zl6.db <- read_csv(file.path("Microclimate_data_supporting",
@@ -37,7 +47,7 @@ import.log <- read_csv(file.path("Microclimate_data_supporting",
 removed.vec <- c("ET5_MC2", "FB3_MC2", "FB1_MC2", "ET2_MC3", "ET6_MC3",
                  "FB4_MC1", "FB4_MC2", "FB4_MC3")
 
-ET.vec <- c("ET2_MC1", "ET2_MC2", "ET2_MC3",
+ET.vec <- c("ET2_MC1", "ET2_MC2", 
            "ET3_MC1", "ET3_MC2", "ET3_MC3",
            "ET4_MC1", "ET4_MC2", "ET4_MC3",
            "ET5_MC1", "ET5_MC3",
@@ -60,7 +70,7 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2024-02-29 23:23:59"
+endDL <- "2024-04-30 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
@@ -156,6 +166,8 @@ for(i in MC.vec){
 }
 
 # Step 1b -------------------------------------------------------------
+# Removed from this process: "ET6_MC2-15957"
+
 zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
                                "zl6_database.csv")) %>% 
   filter(Zentracloud == "No")
@@ -163,8 +175,9 @@ zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
 ## Loop ----------------------------------------------------------------
 
 no.ZC.vec <- no.ZC.vec.full
+# no.ZC.vec <- no.ZC.vec.full[9]
 
-# i <- no.ZC.vec[2]
+# i <- no.ZC.vec[4]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -364,6 +377,29 @@ for(i in MC.vec){
                           str_c(i, "_MC", "_L3.csv")))
   cat("saved data for: ", i, "\n")
 }
+
+
+# Step 4: Export ----------------------------------------------------------
+
+## For Microclimate paper --------------------------------------------------
+
+all.files <- list.files("Microclimate_data_L3", 
+                        pattern = ".csv", 
+                        full.names = TRUE)
+all.files.sub <- all.files[which(str_detect(all.files, "P") == F)]
+
+d <- lapply(all.files.sub, read_csv, show_col_types = F) 
+
+d2 <- d %>% 
+  bind_rows() %>% 
+  filter(Timestamp >= ymd("2022-12-01") &
+           Timestamp < ymd("2023-12-01")) %>% 
+  select(Tree, Station, Timestamp, Solar, Temp, RH, 
+         Atmos_pressure, VPD, Wetness, Wind_speed)
+str(d2)
+
+out.dir <- "C:/Users/User/OneDrive - University of Kentucky/TMCF/TMCF_Analysis/TMCF_data_processed/MC_paper"
+write_csv(d2, file.path(out.dir, "MC_paper_base_data.csv"))
 
 # Troubleshooting and extra ------------------------------------
 

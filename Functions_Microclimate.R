@@ -6,7 +6,7 @@ full.tree.vec <- c("ET1", "ET2", "ET3", "ET4", "ET5", "ET6", "ET7", "ET8",
                    "TV1", "TV2", "TV3", "TV4")
 
 no.ZC.vec.full <- c("ET1_MC1-16008", "ET1_MC2-15954", 
-                    "ET6_MC1-15982", "ET6_MC2-15957", "ET6_MC3-15949",
+                    "ET6_MC1-15982", "ET6_MC3-15949",
                     "ETP1_ATM41-15899", "ETP2_ATM41-16041", 
                     "FBP1_ATM41-15996", "FBP2_ATM41-15979-15935", 
                     "TVP_ATM41-15917")
@@ -75,6 +75,7 @@ change_column_names <- function(element, source){
 
 # Imports data from direct datalogger downloads that has not been formatted in ZentraCloud
 # Parameters: x: a file path where the data is stored
+# x <- filenames[3]
 read_MC_noZC <- function(x){
   
   data.view = suppressMessages(read_csv(x, col_names = FALSE, n_max = 3,
@@ -85,7 +86,7 @@ read_MC_noZC <- function(x){
   variable.names = as.character(data.view[3,][-1])
   variable.names2 = gsub("[^[:alnum:]]", "", variable.names)
   
-  #fix duplicated column names
+  #fix duplicated column names (ECRN-100 and ATM41 both have Precip)
   instrument.names = as.character(data.view[2,][-1])
   clarify.instrument = which(instrument.names == "ECRN-100")
   variable.names3 = replace(variable.names2, 
@@ -104,6 +105,7 @@ read_MC_noZC <- function(x){
   
   return(d)
 }
+# read_MC_noZC(filenames[3])
 
 # Step 2: Organize by station -------------------------------------------
 
@@ -144,7 +146,7 @@ MC_to_port <- function(Portnum, df){
 
 # Reads the raw data from a datalogger, and applies "MC_to_port" to all ports and creates a nested dataframe that carries the port metadata
 # MCnum: MCID of an individual datalogger (eg "FB1_MC1), typically passed in from "MC_to_tree"
-# MCnum <- "FB1_MC1"
+# MCnum <- "ET5_MC3"
 MC_to_datalogger <- function(MCnum){
   rawdat <- read_csv(file.path("Microclimate_data_raw", str_c(MCnum, ".csv")),
                      show_col_types = F)
@@ -161,7 +163,7 @@ MC_to_datalogger <- function(MCnum){
 
 # Applies "MC_to_datalogger" to all dataloggers in a tree and binds the results together
 # TreeID: Name of a tree
-# TreeID <- "FB1"
+# TreeID <- "TV4"
 MC_to_tree <- function(TreeID){
   ZLs <- zl6.db %>% 
     filter(Location == TreeID) %>% 
@@ -187,19 +189,27 @@ MC_to_station <- function(StationNum, d.nested){
   return(df)
 }
 
-# When sensors get moved to a new datalogger, it adds a whole bunch of rows with NAs, that then create duplicated timestamps when bound to the data from the previous datalogger.
+# When sensors get moved to a new datalogger, it adds a whole bunch ofleading NAs to new data and trailing NAs to old data if datalogger still installed. These then create duplicated timestamps when bound together
 # d.nst: output from MC_to_tree, created in the first line of the for loop in Step 2
+# d.nst <- MC_to_tree("TV4")
 fix_moved_sensors <- function(d.nst){
-  # Remove leading NA's for the newly moved instrument
-  extract_valid_values <- function(x, y){
-    x %>% filter(floor_date(Timestamp, "days") > y)
+  remove_leading_NAs <- function(x, y){
+    x %>% 
+      filter(floor_date(Timestamp, "days") > y) 
+  }
+  
+  remove_trailing_NAs <- function(x, y){
+    x %>% 
+      filter(floor_date(Timestamp, "days") < y)
   }
   
   d <- d.nst %>% 
     left_join(moved.instruments, by = c("Tree", "Station", "Instrument", "MC")) %>% 
     filter(!is.na(Timestamp)) %>% 
     mutate(data = ifelse(Tracking == "MC.new", 
-                         map2(data, Timestamp, extract_valid_values), data)) %>% 
+                         map2(data, Timestamp, remove_leading_NAs), data)) %>%
+    mutate(data = ifelse(Tracking == "MC.old",
+                         map2(data, Timestamp, remove_trailing_NAs), data)) %>% 
     select(-Timestamp, -Tracking)
   
   suppressMessages(d2 <- d %>% 
