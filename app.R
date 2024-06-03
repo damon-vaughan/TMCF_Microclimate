@@ -23,9 +23,9 @@ ui <- fluidPage(
     sidebarPanel(
       sliderInput("daterange", 
                   label = h4("Select date range"), 
-                  min = ymd("2022-09-01"), 
+                  min = ymd("2022-06-01"), 
                   max = as_date(Sys.time()), 
-                  value = c(ymd("2022-09-01"), Sys.time())),
+                  value = c(ymd("2022-06-01"), Sys.time())),
       fluidRow(radioButtons("fixed.y", inline = T,
                             label = h4("Fix y-axis?"),
                             choices = c("No", "Coarse", "Fine"),
@@ -84,11 +84,17 @@ ui <- fluidPage(
                                           "ECRN-100_Precip_max"),
                               selected = "Solar"),
                  )),
-        column(3, offset = 1,
-               radioButtons("Time.res",
-                            label = h4("Select time resolution"),
-                            choices = c("15 Min", "Hourly", "Daily", "Weekly"),
-                            selected = "15 Min"))),
+          column(3, offset = 1,
+                 fluidRow(
+                   radioButtons("Level",
+                                label = h4("Select level"),
+                                choices = c("L3", "L4"),
+                                selected = "L4")),
+                 fluidRow(
+                   radioButtons("Time.res",
+                                label = h4("Select time resolution"),
+                                choices = c("15 Min", "Hourly", "Daily", "Weekly"),
+                                selected = "15 Min")))),
       titlePanel("Download options"),
       fluidRow(
         column(5,
@@ -128,7 +134,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   dataInput <- reactive({
-    read_csv(file.path("Microclimate_data_L3", str_c(input$tree, "_MC_L3.csv"))) %>% 
+    read_csv(file.path(str_c("Microclimate_data_", input$Level), 
+                             str_c(input$tree, "_MC_", input$Level, ".csv"))) %>% 
       filter(Tree == input$tree) %>%
       filter(Timestamp >= as.POSIXct(input$daterange[1], tz = "UTC")  &
                Timestamp <= as.POSIXct(input$daterange[2], tz = "UTC"))
