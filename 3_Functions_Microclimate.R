@@ -306,19 +306,22 @@ expand_data_window <- function(x, y){
 # x <- d4$data[[1]]
 adjust_RH_maxes_global <- function(x){
   if(unique(x$Key) %in% RH.low.maxes.global){
-    x %>% 
+    x2 <- x %>% 
       mutate(RH = RH + (1 - max(RH, na.rm = T)))
   } else {
-    x
+    x2 <- x
   }
+  return(x2)
 }
 
 # More complicated adjustment function for when the flat max RH value drifts throughout the life of the series. Similar strategy but uses weekly maxes to determine the offset value, and assumes the RH reaches 1 on a weekly basis.
+
 adjust_RH_maxes_local <- function(x){
   if(unique(x$Key) %in% RH.low.maxes.local){
     weekly.max <- x %>% 
       group_by(Week = floor_date(Timestamp, "weeks")) %>%
-      summarise(Week.max = max(RH, na.rm = T))
+      summarise(Week.max = max(RH, na.rm = T)) %>% 
+      mutate(Week.max = ifelse(Week.max == -Inf, 1, Week.max))
     x2 <- x %>% 
       mutate(Week = floor_date(Timestamp, "weeks")) %>% 
       left_join(weekly.max, by = "Week") %>% 
@@ -327,4 +330,6 @@ adjust_RH_maxes_local <- function(x){
   } else {
     x2 <- x
   }
+  return(x2)
 }
+

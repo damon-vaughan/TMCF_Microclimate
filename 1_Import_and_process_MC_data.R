@@ -62,7 +62,9 @@ FB.vec <- c("FB1_MC1", "FB1_MC3",
            "FB2_MC1", "FB2_MC2", "FB2_MC3",
            "FB3_MC1", "FB3_MC3",
            "FB5_MC1", "FB5_MC2", "FB5_MC3",
-           "FB6_MC1", "FB6_MC2", "FB6_MC3",
+           # "FB6_MC1", 
+           "FB6_MC2", 
+           # "FB6_MC3",
            "FB7_MC1", "FB7_MC2", "FB7_MC3",
            "FB8_MC1", "FB8_MC2", "FB8_MC3")
 
@@ -74,11 +76,12 @@ TV.vec <- c("TV1_MC1", "TV1_MC2", "TV1_MC3",
 ## Loop --------------------------------------------------------------------
 # The warning is because sometimes the same timestamp has 2 different sensor readings. Makes no sense, but it happens and generates a long warning that has to do with the error columns.
 
-endDL <- "2024-05-31 23:23:59"
+endDL <- "2024-06-30 23:23:59"
 Log <- data.frame(MC = NA, Action = NA, Reason = NA)
 # Last.import <- as_datetime("2023-09-01 00:00:00")
 
 MC.vec <- TV.vec
+# MC.vec <- c("ET7_MC1")
 # i <- "ET2_MC1"
 for(i in MC.vec){
   
@@ -170,9 +173,9 @@ zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
 ## Loop ----------------------------------------------------------------
 
 no.ZC.vec <- no.ZC.vec.full
-# no.ZC.vec <- no.ZC.vec.full[9]
+# no.ZC.vec <- no.ZC.vec.full[8]
 
-# i <- no.ZC.vec[4]
+# i <- no.ZC.vec[8]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -240,7 +243,7 @@ tree.vec <- full.tree.vec
 #   LW_minutes = NA, Wind_speed = NA, Wind_direction = NA, Gust_speed = NA,
 #   Timestamp2 = NA, EpiMoisture = NA, EpiTemp = NA) 
 
-# i <- "FB6"
+# tree.vec <- "ET7"
 for(i in tree.vec){
   
   d.nst <- MC_to_tree(i) 
@@ -292,7 +295,7 @@ for(i in tree.vec){
 
 ## Loop, pasture stations --------------------------------------
 
-pasture.vec <- full.pasture.vec
+pasture.vec <- full.ground.vec
 # i <- "TVP"
 for(i in pasture.vec){
   
@@ -320,15 +323,15 @@ for(i in pasture.vec){
 #per tree, combined w pre june. Also clean up the data
 
 library(needs)
-needs(tidyverse, here, lubridate)
+needs(tidyverse, lubridate)
 
 tree.vec <- full.tree.vec
-pasture.vec <- full.pasture.vec
+pasture.vec <- full.ground.vec
 
 MC.vec <- c(tree.vec, pasture.vec)
 # MC.vec <- JulyProbs
 
-i <- "FB6"
+# MC.vec <- "ET7"
 for(i in MC.vec){
   old.dat <- read_csv(file.path("Microclimate_data_L2",
                                 "Microclimate_toJune2023_L2",

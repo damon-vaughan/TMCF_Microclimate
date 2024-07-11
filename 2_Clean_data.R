@@ -4,6 +4,7 @@ needs(tidyverse, readxl)
 source("3_Functions_Microclimate.R")
 
 options(readr.show_col_types = FALSE)
+theme_set(theme_bw())
 
 RH.low.maxes.global <- c("ET2_S4", "ET7_S4", "FB4_S1", "FB4_S4", "TV3_S2")
 RH.low.maxes.local <- c("FB8_S5")
@@ -33,6 +34,8 @@ MC.vec <- c(tree.vec, ground.vec)
 # MC.vec <- c("ET2", "ET8", "FB4", "FB6", "FB8", "TV3")
 # MC.vec <- c("TV3")
 
+# MC.vec <- "FB4"
+# i <- "FB8"
 # !!!! SLOW !!!!!
 for(i in MC.vec){
   d <- read_csv(file.path("Microclimate_data_L3", str_c(i, "_MC", "_L3.csv")))
@@ -64,7 +67,9 @@ for(i in MC.vec){
     mutate(RH = ifelse(RH > 1, 1, RH)) %>% 
     mutate(Key = str_c(i, "_", Station)) %>% 
     group_by(Station) %>%
-    nest() 
+    nest() %>% 
+    ungroup()
+  # str(d3.nst, max.level = 1)
   
   d4 <- d3.nst %>% 
     mutate(data = map(data, adjust_RH_maxes_global)) %>% 
@@ -286,8 +291,39 @@ bad.data <- read_excel(file.path("Microclimate_data_supporting",
 zl.db <- read_csv(file.path("Microclimate_data_supporting",
                             "zl6_database_long.csv"))
 
+# Look at specific series -------------------------------------------------
+
+Tree.ID <- "FBP1"
+d <- read_csv(file.path("Microclimate_data_L4", str_c(Tree.ID, "_MC_L4.csv")))
+
+x <- "Solar"
+plot_series <- function(x){
+  ggplot(d) +
+    geom_line(aes(x = Timestamp, y = .data[[x]]))
+}
 
 # Export ----------------------------------------------------------
+
+
+# For Phillipe ------------------------------------------------------------
+
+FB5 <- read_csv(file.path("Microclimate_data_L4", "FB5_MC_L4.csv"))
+
+S1 <- FB5 %>% 
+  filter(Station == "S1")
+write_csv(S1, file.path("Data_export", "Philipp", "FB5_S1.csv"))
+
+S2 <- FB5 %>% 
+  filter(Station == "S2")
+write_csv(S2, file.path("Data_export", "Philipp", "FB5_S2.csv"))
+
+S3 <- FB5 %>% 
+  filter(Station == "S3")
+write_csv(S3, file.path("Data_export", "Philipp", "FB5_S3.csv"))
+
+S4 <- FB5 %>% 
+  filter(Station == "S4")
+write_csv(S4, file.path("Data_export", "Philipp", "FB5_S4.csv"))
 
 ## For Microclimate paper --------------------------------------------------
 
