@@ -310,7 +310,7 @@ for(i in ground.vec){
 }
 
 
-# Step 2b: Bring pre-June data up to L2 -----------------------------------
+# Step 2b: Bring pre-June data up to L2 --------------------
 
 name.change <- read_excel(file.path("Microclimate_data_supporting",
                                     "Variable_names.xlsx"))
@@ -319,7 +319,7 @@ prejune.L1.dir <- file.path("Microclimate_data_L2", "Microclimate_toJune2023_L1"
 all.files <- list.files(prejune.L1.dir, 
                         pattern = ".csv")
 
-## Most trees --------------------------------------------------------------
+## Most trees ------------------------------------------------------
 
 tree.vec.prejune <- full.tree.vec[-1]
 
@@ -356,7 +356,7 @@ for(i in tree.vec.prejune){
   print(i)
 }
 
-## ET1 -------------------------------------------------------------------
+## ET1 ------------------------------------------------------------
 
 ET1.vec <- full.tree.vec[1]
 
