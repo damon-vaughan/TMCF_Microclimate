@@ -77,7 +77,7 @@ ui <- fluidPage(
                  radioButtons("Variable",
                               label = h4("Select variable"),
                               choices = c("Solar", "Temp", "RH", "Atmos_pressure",
-                                          "VPD", "Wetness", "Wind_direction",
+                                          "VPD", "LWS_Count", "Wind_direction",
                                           "Wind_speed", "Gust_speed", "Precipitation",
                                           "Precip_max", "EpiMoisture", "EpiTemp",
                                           "ECRN-100_Precipitation",
@@ -304,11 +304,11 @@ server <- function(input, output, session) {
   )
 }
 
-# Run app ----------------------------------------------------------------
+# Run app ------------------------------------------------------------
 
 shinyApp(ui, server)
 
-# Test server -------------------------------------------------------------
+# Test server -------------------------------------------------------
 
 # testServer(server, {
 #   session$setInputs(tree = "ET1")
