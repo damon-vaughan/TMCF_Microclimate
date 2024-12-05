@@ -1,3 +1,8 @@
+# Moves data from L3 to the final product. Includes 3 main steps:
+# 1. Remove bad data. This data was flagged as bad (by variable, instrument, or datalogger), then expanded to explicitly state all variables it applies to
+# 2. Fix funky data either globally (RH never reached 1) or locally (Temp of 0, etc)
+# 3. Calculate calculated variables (VPD, etc)
+
 library(needs)
 needs(tidyverse, readxl)
 
@@ -9,10 +14,73 @@ theme_set(theme_bw())
 RH.low.maxes.global <- c("ET2_S4", "ET7_S4", "FB4_S1", "FB4_S4", "TV3_S2")
 RH.low.maxes.local <- c("FB8_S5")
 
-# Load general data ------------------------------------------------------------
+# Errors: Complete sheet with instruments and dataloggers ---------
 
-bad.data <- read_excel(file.path("Microclimate_data_supporting", "MC_bad_data_windows_Damon.xlsx")) %>%
-  select(-Note) 
+d <- read_csv(file.path("Microclimate_data_supporting", "MC_bad_data_shiny_full.csv")) %>% 
+  select(-Note) %>% 
+  mutate(Start = mdy_hm(Start),
+         End = mdy_hm(End)) %>% 
+  filter(!is.na(Start) & !is.na(End))
+
+v.names <- read_excel(file.path("Microclimate_data_supporting",
+                                "Variable_names.xlsx")) %>% 
+  select(Variable = Final, Instrument) %>% 
+  filter(!is.na(Instrument))
+
+zl6.db.long <- read_csv(file.path("Microclimate_data_supporting",
+                                  "zl6_database_long.csv")) %>% 
+  select("Tree" = "Location", MC.ID, Station, Instrument)
+
+to.variable <- d %>% 
+  filter(Apply.to.instrument == "No" & Apply.to.datalogger == "No") %>% 
+  select(-Apply.to.instrument, -Apply.to.datalogger)
+
+to.instrument <- d %>% 
+  filter(Apply.to.instrument == "Yes" & Apply.to.datalogger == "No") %>% 
+  left_join(v.names, by = "Variable") %>% 
+  select(Tree, Station, Start, End, Instrument) %>% 
+  full_join(v.names, by = "Instrument", relationship = "many-to-many") %>% 
+  filter(!is.na(Start)) %>% 
+  select(-Instrument)
+
+to.datalogger1 <- d %>% 
+  filter(Apply.to.datalogger == "Yes") %>% 
+  left_join(v.names, by = "Variable") %>% 
+  select(Tree, Station, Start, End, Instrument) %>% 
+  left_join(zl6.db.long, by = c("Tree", "Station", "Instrument")) %>% 
+  select(-Instrument, -Station, -Tree)
+
+zl6.sub <- zl6.db.long %>% 
+  filter(MC.ID %in% to.datalogger1$MC.ID) 
+
+to.datalogger2 <- to.datalogger1 %>% 
+  full_join(zl6.sub, by = "MC.ID", relationship = "many-to-many") %>% 
+  filter(!is.na(Station))
+
+to.datalogger3 <- to.datalogger2 %>% 
+  full_join(v.names, by = "Instrument", relationship = "many-to-many") %>% 
+  filter(!is.na(Start)) %>% 
+  select(Tree, Station, Variable, Start, End)
+
+errors.full <- to.variable %>% 
+  bind_rows(to.instrument) %>% 
+  bind_rows(to.datalogger3) %>% 
+  arrange(Tree, Station, Variable, Start)
+str(errors.full)
+
+write_csv(errors.full, file.path("Microclimate_data_supporting", "MC_bad_data_processed.csv"))
+
+
+# Load general data ---------------------------------
+
+# The old file, before I updated the process in Nov. 2024
+# bad.data <- read_excel(file.path("Microclimate_data_supporting", 
+#                                  "MC_bad_data_original.xlsx")) %>%
+#   select(-Note) 
+
+bad.data <- read_csv(file.path("Microclimate_data_supporting",
+                               "MC_bad_data_processed.csv")) 
+str(bad.data)
 
 bad.data.nst <- bad.data %>% 
   group_by(Tree, Station, Variable) %>% 
@@ -25,17 +93,8 @@ bad.data.expanded <- bad.data.nst  %>%
   ungroup() %>%
   rename(Bad.data = Data.flag)
 
-# i <- "FB8"
-tree.vec <- full.tree.vec
-ground.vec <- full.ground.vec
-
-MC.vec <- c(tree.vec, ground.vec)
-
-# MC.vec <- c("ET2", "ET8", "FB4", "FB6", "FB8", "TV3")
-# MC.vec <- c("TV3")
-
-# MC.vec <- "TV1"
-i <- "ET1"
+MC.vec <- c(full.tree.vec, full.ground.vec)
+# i <- "FB6"
 # !!!! SLOW !!!!!
 for(i in MC.vec){
   d <- read_csv(file.path("Microclimate_data_L3", str_c(i, "_MC", "_L3.csv")))
@@ -79,15 +138,31 @@ for(i in MC.vec){
     unnest(data) %>%
     ungroup() %>% 
     select(-Key)
-
+  
   # Calculate variables -----------------------------------------------------
 
-  # mutate(Wetness = 1.54 * exp(0.0058 * LWS_Count)) %>%
-  
-  
+  # mutate(Wetness = 1.54 * exp(0.0058 * LWS_Count))
   d5 <- d4 %>% 
     mutate(VPD = calculate_VPD(Temp, RH)) %>% 
     mutate(Wetness = round(1.54 * exp(0.0058 * LWS_Count), 2)) 
+  
+  # Sensor-specific fixes ---------------------------------------------------
+  # FB6 S3 ATM14 had a calibration issue
+  
+  if(i == "FB6"){
+    FB6.S3.sub <- d5 %>%
+      filter(Tree == "FB6" & Station == "S3" &
+               Timestamp > as_datetime("2022-10-10 00:15:00") &
+               Timestamp < as_datetime("2023-04-11 12:00:00")) %>% 
+      mutate(RH = RH + (1 - max(RH, na.rm = T)))
+    
+    d6 <- d5 %>% 
+      anti_join(FB6.S3.sub, by = c("Station", "Tree", "Timestamp")) %>% 
+      bind_rows(FB6.S3.sub) %>% 
+      arrange(Station, Tree, Timestamp)
+  } else {
+    d6 <- d5
+  }
   
   # Wetness adjustment ------------------------------------------------------
   # mutate(Wetness = 1.54 * exp(0.0058 * LWS_Count))
@@ -98,9 +173,9 @@ for(i in MC.vec){
   #   group_by(Tree, Station) %>% 
   #   summarise(minimum = min(Count, na.rm = T))
   # 
-  # Save --------------------------------------------------------------------
+  # Save ------------------------------------------------------------
   
-  write_csv(d5, file.path("Microclimate_data_L4",
+  write_csv(d6, file.path("Microclimate_data_L4",
                           str_c(i, "_MC", "_L4.csv")))
   cat("saved data for: ", i, "\n")
 }

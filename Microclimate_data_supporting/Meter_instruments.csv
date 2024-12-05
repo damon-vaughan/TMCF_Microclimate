@@ -4,7 +4,7 @@ Temp,A14
 RH,A14
 Atmos_pressure,A14
 VPD,A14
-Wetness,LWS
+LWS_Count,LWS
 Wind_direction,A22
 Wind_speed,A22
 Gust_speed,A22

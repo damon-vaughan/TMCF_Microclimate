@@ -14,7 +14,7 @@ zl6 <- read_csv(file.path("Microclimate_data_supporting",
 instruments <- read_csv(file.path("Microclimate_data_supporting", "Meter_instruments.csv"))
 
 
-# UI ----------------------------------------------------------------------
+# UI --------------------------------------------------------------
 
 ui <- fluidPage(
   titlePanel("Microclimate data portal"),
@@ -168,6 +168,8 @@ server <- function(input, output, session) {
         summarise(across(where(is.numeric), ~mean(., na.rm = T))) %>% 
         ungroup()}
   })
+  
+  
 
 ## Plots -------------------------------------------------------------------
   
@@ -182,14 +184,17 @@ server <- function(input, output, session) {
             axis.text.y = element_text(size = 20),
             plot.title = element_text(size = 24)) +
       ggtitle(str_c(input$tree, "_", input$Variable))
+    
     if(input$fixed.y == "Coarse"){
       p <- p +
         ylim(input$y.coarse[1], input$y.coarse[2])
     }
+    
     if(input$fixed.y == "Fine"){
       p <- p +
         ylim(input$y.fine.min, input$y.fine.min + input$y.fine.range)
     }
+    
     p
     }) 
   

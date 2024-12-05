@@ -1,0 +1,33 @@
+Tree,Station,Variable,Start,End,Apply.to.instrument,Apply.to.datalogger,Note
+ET3,S1,LWS_Count,2024-06-28 09:15:00,2024-07-02 10:30:00,Yes,No,Fritzing
+ET3,S1,LWS_Count,2024-09-22 10:30:00,2024-10-02 09:45:00,Yes,No,Fritzing
+ET3,S4,Wind_speed,2024-07-11 11:00:00,2024-09-11 19:15:00,Yes,No,Instrument out
+ET4,S2,Solar,2024-06-20 02:30:00,2024-07-12 09:45:00,Yes,No,Instrument out
+ET4,S2,LWS_Count,2024-06-19 23:00:00,2024-07-12 19:45:00,Yes,No,Instrument out
+ET4,S2,Wind_speed,2024-06-20 02:15:00,2024-07-12 11:30:00,Yes,No,Instrument out
+ET4,S4,Wind_speed,2024-06-20 05:45:00,2024-07-12 18:30:00,Yes,No,Instrument out
+ET5,S3,Solar,2024-08-24 02:30:00,2024-08-31 00:30:00,Yes,No,Fritzing
+ET5,S4,Wind_speed,2024-08-24 12:45:00,2024-08-30 21:15:00,Yes,No,Instrument out
+ET6,S3,Solar,2024-06-12 11:00:00,2024-06-25 22:00:00,Yes,Yes,Datalogger out
+ET7,S5,Temp,2024-06-05 03:00:00,2024-09-24 08:45:00,Yes,No,"Instrument out, never fixed"
+ET7,S5,LWS_Count,2024-06-04 08:30:00,2024-06-06 18:30:00,Yes,No,Fritzing
+ET7,S5,LWS_Count,2024-06-15 00:15:00,2024-06-20 10:00:00,Yes,No,Fritzing
+ET7,S5,LWS_Count,2024-09-23 15:15:00,2024-10-08 09:30:00,Yes,No,Fritzing
+ET8,S1,Solar,2024-07-03 21:00:00,2024-07-26 23:30:00,Yes,Yes,Datalogger out
+ET8,S2,Temp,2024-07-03 17:30:00,2024-07-26 20:45:00,Yes,Yes,Datalogger out
+ET8,S2,Temp,2024-09-04 14:45:00,2024-10-09 10:45:00,Yes,No,Instrument blinking in and out
+ET8,S5,LWS_Count,2024-08-10 00:15:00,2024-08-13 05:15:00,Yes,No,Fritzing
+FB5,S2,Solar,2024-06-17 21:45:00,2024-08-28 18:15:00,Yes,Yes,Datalogger out
+FB6,S5,Temp,2024-06-23 10:45:00,2024-08-16 20:15:00,Yes,No,Instrument out
+FB6,S4,Wind_speed,2024-07-12 12:00:00,2024-08-20 02:30:00,Yes,No,Instrument out
+TV4,S1,Solar,2024-07-24 07:15:00,2024-08-30,Yes,No,Instrument out
+TV4,S1,Temp,2024-08-13 13:45:00,2024-08-30,Yes,No,"Instrument out, likely datalogger issues"
+TV4,S2,Atmos_pressure,2024-09-21 23:00:00,2024-11-02,No,No,Atmos pressure values went berserk
+TV4,S1,LWS_Count,2024-08-12 12:00:00,2024-08-30 03:45:00,Yes,No,Instrument out
+TV4,S1,Wind_speed,2024-07-24 00:45:00,2024-08-29 20:45:00,Yes,No,Instrument out
+TV4,S4,Wind_speed,2024-07-23 23:30:00,2024-08-30 04:30:00,Yes,No,Instrument out
+ETP1,S0,Precipitation,2024-06-11 01:15:00,2024-07-11 03:00:00,No,No,Taqueado
+ETP1,S0,Precip_max,2024-06-11 01:15:00,2024-07-11 03:00:00,No,No,Taqueado
+FBP1,S0,Solar,2024-08-08 02:45:00,2024-09-13 18:30:00,No,Yes,"Datalogger out, cows had chewed LWS cables"
+FBP1,S0,RH,2024-09-13 09:15:00,2024-10-10 09:00:00,Yes,No,RH sensor misbehaving
+TVP,S0,ECRN-100_Precipitation,2024-09-13 20:00:00,2024-10-17 11:15:00,Yes,No,Instrument out

@@ -19,3 +19,7 @@ summarise_MC <- function(x){
   
   return(x3)
 }
+
+full.tree.vec <- c("ET1", "ET2", "ET3", "ET4", "ET5", "ET6", "ET7", "ET8",
+                   "FB1", "FB2", "FB3", "FB4", "FB5", "FB6", "FB7", "FB8", 
+                   "TV1", "TV2", "TV3", "TV4")

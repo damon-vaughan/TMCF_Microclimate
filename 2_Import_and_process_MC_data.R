@@ -2,7 +2,7 @@
 #   dplyr::summarise(n = dplyr::n(), .by = c(Tree, Station, Timestamp)) |>
 #   dplyr::filter(n > 1L)
 
-# Step 1a: Import ZC ------------------------------
+# Step 1a: Import to Raw ------------------------------
 
 # remotes::install_git(url = "https://gitlab.com/meter-group-inc/pubpackages/zentracloud")
 # remove.packages("zentracloud")
@@ -161,7 +161,7 @@ for(i in MC.vec){
                                   "zl6_import_log.csv"))
 }
 
-# Step 1b -------------------------------------------------------------
+# Step 1b: NoZC to Raw ------------------------------------
 # Removed from this process: "ET6_MC2-15957"
 
 zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
@@ -173,7 +173,7 @@ zl6.noZC <- read_csv(file.path("Microclimate_data_supporting",
 no.ZC.vec <- no.ZC.vec.full
 # no.ZC.vec <- no.ZC.vec.full[8]
 
-# i <- no.ZC.vec[8]
+i <- no.ZC.vec[2]
 for(i in no.ZC.vec){
   filenames <- list.files(file.path("Microclimate_data_raw", "MC_noZC",
                                     i),
@@ -209,8 +209,8 @@ for(i in no.ZC.vec){
 # str(test)
 
 
-# Step 2a: Switch to Station-based organization ----------------------------
-# and make it look like the toJune data
+# Step 2a: Raw to L2 ---------------------------------
+# Switch to Station-based organization and make it look like the toJune data
 # ZC/noZC are both treated the same here
 
 library(needs)
@@ -234,13 +234,13 @@ moved.instruments <- read_excel(file.path("Microclimate_data_supporting",
   separate(MC.port, into = c("MC", "Port"), remove = F) %>% 
   mutate(Port = as.numeric(Port))
 
-## Loop, trees ------------------------------------------------------------
+## Loop, trees --------------------------------------------------
 
 tree.vec <- full.tree.vec
-# tree.vec <- c("ET5")
+tree.vec <- c("ET1")
 
 # tree.vec <- "ET7"
-# i <- "TV1"
+# i <- "TV4"
 for(i in tree.vec){
   
   d.nst <- MCdata_to_tree(i) %>% 
@@ -263,8 +263,10 @@ for(i in tree.vec){
   
   # Switching to lapply because I am applying the function to a vector (stations) and expecting a list output. The nested df is used as support so purrr approach not appropriate
   d.list <- lapply(stations, MC_to_station, d.nested = d.nst3) 
+  # check <- d.list[[2]]
   
   d.list2 <- lapply(d.list, remove_station_from_header)
+  # check <- d.list2[[2]]
   
   d <- d.list2 %>% 
     bind_rows() %>% 
@@ -288,7 +290,8 @@ for(i in tree.vec){
 ## Loop, ground stations --------------------------------------
 
 ground.vec <- full.ground.vec
-# i <- "ETP2"
+ground.vec <- "TVP"
+# i <- "FBP2"
 for(i in ground.vec){
   
   d <- read_csv(file.path("Microclimate_data_raw", str_c(i, "_ATM41.csv"))) %>% 
@@ -409,7 +412,7 @@ for(i in ground.vec){
   write_csv(d2, file.path("Microclimate_data_L2", "Microclimate_toJune2023_L2_new", out))
 }
 
-# Step 3: combine with pre-June ------------------------------
+# Step 3: L2 to L3: combine with pre-June ------------------------------
 #per tree, combined w pre june. Also clean up the data
 
 library(needs)
@@ -419,11 +422,13 @@ source("1_Functions_Microclimate.R")
 
 tree.vec <- full.tree.vec
 ground.vec <- full.ground.vec
+# ground.vec <- NULL
 
 MC.vec <- c(tree.vec, ground.vec)
 # MC.vec <- JulyProbs
 
 # i <- "TV1"
+# MC.vec <- c("FB2", "FB7")
 for(i in MC.vec){
   old.dat <- read_csv(file.path("Microclimate_data_L2",
                                 "Microclimate_toJune2023_L2_new",
@@ -460,11 +465,173 @@ for(i in MC.vec){
 }
 
 
+#>>> Final import --------------------------------------------------
+
+library(needs)
+needs(tidyverse, readxl)
+
+source("1_Functions_Microclimate.R")
+
+options(readr.show_col_types = FALSE)
+
+name.change <- read_excel(file.path("Microclimate_data_supporting",
+                                    "Variable_names.xlsx"))
+
+## Final download add-on -----------------------------------
+
+# Do one at a time, because it saves over the raw data
+
+MC.ID <- "FB7_MC3"
+
+# Raw data
+filename.raw <- file.path("Microclimate_data_raw", str_c(MC.ID, ".csv"))
+data.raw <- read_csv(filename.raw)
+raw.data.ends <- max(data.raw$Timestamp, na.rm = T)
+
+# Import data:
+# filename.import <- list.files(
+#   str_c("D:/TMCF/Microclimate_BUP_LastMonth/", MC.ID),
+#   pattern = "csv", full.names = T)
+filename.import <- list.files(
+  file.path("Microclimate_data_raw", "Project_end", MC.ID),
+  pattern = "csv", full.names = T)
+
+data.import <- read_MC_noZC(filename.import) %>% 
+  change_column_names(source = "NoZC") %>% 
+  arrange(Timestamp)
+
+# get rid of any ghost sensors
+if(length(which(str_detect(names(data.import), "Unknown"))) > 0){
+  data.import2 <- data.import %>% 
+    select(-names(data.import)[which(str_detect(names(data.import), "Unknown"))])
+} else {
+  data.import2 <- data.import
+}
+
+data.import3 <- data.import2 %>% 
+  mutate(Tree = str_split(MC.ID, "_")[[1]][1],
+         MC = str_split(MC.ID, "_")[[1]][2]) %>%
+  select(Tree, MC, Timestamp, everything()) %>% 
+  select(-Port7_Drop1, -Port7_Drop2, -Port8_Drop3, -Port8_Drop4)
+
+data.import4 <- data.import3 %>% 
+  filter(Timestamp > raw.data.ends)
+
+# Combine them
+full.data <- data.raw %>% 
+  bind_rows(data.import4) %>%
+  distinct() %>% 
+  arrange(Timestamp)
+
+write_csv(full.data, 
+          file.path("Microclimate_data_raw", str_c(MC.ID, ".csv")))
+
+
+## Final download gap fill -----------------------------------
+# Do one at a time, because it saves over the raw data
+
+MC.ID <- "FB6_MC1"
+gap.starts <- as_datetime("2024-07-24 00:00:00")
+
+# Raw data
+filename.raw <- file.path("Microclimate_data_raw", str_c(MC.ID, ".csv"))
+data.raw <- read_csv(filename.raw) %>% 
+  filter(Timestamp <= gap.starts)
+
+# Import data:
+# filename.import <- list.files(
+#   str_c("D:/TMCF/Microclimate_BUP_LastMonth/", MC.ID),
+#   pattern = "csv", full.names = T)
+filename.import <- list.files(
+  file.path("Microclimate_data_raw", "Project_end", MC.ID),
+  pattern = "csv", full.names = T)
+
+data.import <- read_MC_noZC(filename.import) %>% 
+  change_column_names(source = "NoZC") %>% 
+  arrange(Timestamp) %>% 
+  filter(Timestamp > gap.starts)
+
+# !!!!!!!!!!!!!below needs editing
+
+# get rid of any ghost sensors
+if(length(which(str_detect(names(data.import), "Unknown"))) > 0){
+  data.import2 <- data.import %>% 
+    select(-names(data.import)[which(str_detect(names(data.import), "Unknown"))])
+} else {
+  data.import2 <- data.import
+}
+
+data.import3 <- data.import2 %>% 
+  mutate(Tree = str_split(MC.ID, "_")[[1]][1],
+         MC = str_split(MC.ID, "_")[[1]][2]) %>%
+  select(Tree, MC, Timestamp, everything()) %>% 
+  select(-Port7_Drop1, -Port7_Drop2, -Port8_Drop3, -Port8_Drop4)
+
+data.import4 <- data.import3 %>% 
+  filter(Timestamp > raw.data.ends)
+
+# Combine them
+full.data <- data.raw %>% 
+  bind_rows(data.import4) %>%
+  distinct() %>% 
+  arrange(Timestamp)
+
+write_csv(full.data, 
+          file.path("Microclimate_data_raw", str_c(MC.ID, ".csv")))
+
+## Gap fill other -----------------------------------
+# Do one at a time, because it saves over the raw data
+
+MC.ID <- "ET1_MC2"
+# gap.starts <- as_datetime("2024-07-24 00:00:00")
+
+# Raw data
+filename.raw <- file.path("Microclimate_data_raw", str_c(MC.ID, ".csv"))
+data.raw <- read_csv(filename.raw) 
+
+# Import data:
+# filename.import <- list.files(
+#   str_c("D:/TMCF/Microclimate_BUP_LastMonth/", MC.ID),
+#   pattern = "csv", full.names = T)
+filename.import <- file.path("Microclimate_data_raw", "MC_noZC",
+                             "")
+
+data.import <- read_MC_noZC(filename.import) %>% 
+  change_column_names(source = "NoZC") %>% 
+  arrange(Timestamp) %>% 
+  filter(Timestamp > gap.starts)
+
+# !!!!!!!!!!!!!below needs editing
+
+# get rid of any ghost sensors
+if(length(which(str_detect(names(data.import), "Unknown"))) > 0){
+  data.import2 <- data.import %>% 
+    select(-names(data.import)[which(str_detect(names(data.import), "Unknown"))])
+} else {
+  data.import2 <- data.import
+}
+
+data.import3 <- data.import2 %>% 
+  mutate(Tree = str_split(MC.ID, "_")[[1]][1],
+         MC = str_split(MC.ID, "_")[[1]][2]) %>%
+  select(Tree, MC, Timestamp, everything()) %>% 
+  select(-Port7_Drop1, -Port7_Drop2, -Port8_Drop3, -Port8_Drop4)
+
+data.import4 <- data.import3 %>% 
+  filter(Timestamp > raw.data.ends)
+
+# Combine them
+full.data <- data.raw %>% 
+  bind_rows(data.import4) %>%
+  distinct() %>% 
+  arrange(Timestamp)
+
+write_csv(full.data, 
+          file.path("Microclimate_data_raw", str_c(MC.ID, ".csv")))
 
 # >>>Troubleshooting and extra ------------------------------------
 
-
-## Basic graphs ------------------------------------------------------------
+## Basic graphs -----------------------------------------------------
 
 d <- read_csv(file.path("Microclimate_data_L3", "ET8_MC_L3.csv"))
 str(d)
@@ -546,9 +713,7 @@ test2 <- getReadings(
 )
 d <- test2[[5]]
 
-
-
-# Test read in ------------------------------------------------------------
+## Test read in ------------------------------------------------------------
 
 i <- ET.vec[3]
 start.DL <- "2024-07-01 00:00:00"

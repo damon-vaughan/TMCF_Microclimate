@@ -83,7 +83,7 @@ change_column_names <- function(element, source){
 
 # Imports data from direct datalogger downloads that has not been formatted in ZentraCloud
 # Parameters. x: a file path where the data is stored
-# x <- filenames[3]
+# x <- filename.import
 read_MC_noZC <- function(x){
   
   data.view = suppressMessages(read_csv(x, col_names = FALSE, n_max = 3,
@@ -271,7 +271,7 @@ remove_NAs_from_moved_sensors <- function(d.nst){
 
 # MC_to_station filters the output of "MC_to_tree" to an individual station and outputs the df with all variables
 # Parameters. StationNum: A station ID, such as "S1"; d.nested: A nested df output from "MC_to_tree"
-# StationNum <- "S2"
+# StationNum <- "S4"
 # d.nested <- d.nst3 #Grab this from the import script
 MC_to_station <- function(StationNum, d.nested){
   nst <- d.nested %>%

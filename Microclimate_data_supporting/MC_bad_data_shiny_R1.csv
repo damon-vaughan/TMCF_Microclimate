@@ -1,0 +1,36 @@
+Tree,Station,Variable,Start,End,Apply.to.instrument,Apply.to.datalogger,Note
+ET1,S4,Temp,8/23/2022 5:00,10/31/2022 14:30,Yes,Yes,"Datalogger out, dead batts"
+ET2,S1,Solar,7/26/2022 3:15,8/5/2022 16:15,Yes,Yes,"Datalogger out, dead batts"
+ET3,S1,Solar,8/3/2022 4:00,8/22/2022 15:45,Yes,No,Out
+ET3,S1,Solar,11/2/2022 8:30,11/23/2022 13:30,Yes,No,Cable pulled
+ET3,S1,Temp,11/18/2022 12:30,11/23/2022 16:45,Yes,No,"Instrument failed, replaced"
+ET3,S1,LWS_Count,10/13/2022 21:45,11/24/2022 0:45,Yes,No,Cable chewed
+ET3,S4,Solar,9/29/2022 3:45,11/23/2022 12:30,Yes,No,Sensor out
+ET6,S1,Solar,7/11/2022 19:15,8/3/2022 19:30,Yes,Yes,"Datalogger out, dead batts"
+ET6,S2,Solar,6/20/2022 1:00,8/3/2022 18:00,Yes,Yes,"Datalogger out, dead batts"
+ET6,S4,Temp,11/2/2022 2:30,12/6/2022 15:00,Yes,No,Sensor unplugged
+ET6,S4,LWS_Count,12/6/2022 4:45,1/19/2023 23:15,Yes,No,Sensor out
+ET7,S1,Solar,7/15/2022 4:30,8/6/2022 2:45,Yes,Yes,Datalogger out
+ET7,S3,Solar,8/25/2022 13:30,9/28/2022 14:15,Yes,Yes,Datalogger out
+ET7,S4,Wind_speed,7/14/2022 14:30,8/5/2022 15:15,Yes,No,Wind sensor fritzing
+ET8,S1,Solar,7/22/2022,8/1/2022 16:45,Yes,Yes,Datalogger out
+FB2,S2,LWS_Count,8/24/2022 4:30,9/20/2022 0:15,Yes,No,Instrument out
+FB3,S2,Temp,11/21/2022 0:30,12/16/2022 16:15,Yes,No,Unplugged
+FB3,S4,LWS_Count,12/9/2022 7:45,1/5/2023 6:00,Yes,No,Sensor fritzing
+FB4,S4,Solar,7/13/2022 3:45,8/12/2022,Yes,No,Sensor out
+FB4,S4,Solar,8/24/2022 3:45,12/28/2022 18:15,Yes,No,Sensor out
+FB5,S2,LWS_Count,11/30/2022 5:00,1/18/2023 2:00,Yes,No,Sensor out
+FB5,S4,Solar,7/9/2022 4:00,8/17/2022 15:00,Yes,Yes,Datalogger out
+FB5,S5,LWS_Count,8/17/2022 13:15,2/19/2023 6:30,Yes,No,Long pole broke
+FB5,S5,RH,1/23/2023 1:15,3/7/2023 11:45,Yes,No,Long pole broke
+FB6,S1,Solar,8/10/2022 9:15,8/19/2022 0:30,Yes,Yes,Datalogger out
+FB6,S3,RH,9/20/2022 0:15,10/3/2022 22:30,Yes,No,Sensor fritzing
+FB6,S4,LWS_Count,10/3/2022 2:00,10/18/2022 5:30,Yes,No,Sensor out
+FB6,S5,LWS_Count,8/19/2022 15:30,10/20/2022 11:15,Yes,No,"Unusual values, probably broken long pole"
+FB8,S1,LWS_Count,8/4/2022 10:00,9/1/2022 17:15,Yes,Yes,Datalogger out
+FB8,S3,Temp,7/11/2022 18:00,9/1/2022 14:45,Yes,Yes,Datalogger out
+TV1,S1,Solar,6/9/2022 12:30,8/10/2022 4:45,Yes,No,Sensor fritzing
+TV3,S2,Solar,11/18/2022 16:30,1/5/2023 1:45,Yes,No,Sensor fritzing
+TV4,S4,Wind_speed,10/29/2022 9:45,11/18/2022 12:15,Yes,No,Sensor fritzing
+FBP2,S0,Solar,10/7/2022 2:15,10/18/2022 1:00,Yes,Yes,Datalogger out
+FBP2,S0,LWS_Count,12/11/2022 17:15,1/4/2023 19:00,Yes,No,Sensor out

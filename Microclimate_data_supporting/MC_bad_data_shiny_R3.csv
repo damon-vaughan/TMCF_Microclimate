@@ -1,0 +1,44 @@
+Tree,Station,Variable,Start,End,Apply.to.instrument,Apply.to.datalogger,Note
+ET2,S2,Wind_speed,2023-12-20 14:45:00,2024-01-25 03:00:00,Yes,No,Epicormic branch interfering with wind sensor
+ET3,S4,Solar,2023-05-31 07:00:00,2023-07-26 16:15:00,Yes,No,Instrument out
+ET3,S4,Solar,2023-09-07 00:45:00,2023-10-24 21:45:00,Yes,No,Fritzing
+ET3,S4,LWS_Count,2023-11-24 16:45:00,2023-12-29 22:45:00,Yes,No,Instrument out
+ET4,S2,Solar,2023-07-02 00:15:00,2023-07-20 13:00:00,Yes,Yes,Datalogger out
+ET6,S1,Solar,2023-08-04,2023-08-18 16:45:00,Yes,No,Sensor fritzing
+ET6,S4,LWS_Count,2023-11-01 22:45:00,2023-11-17 23:15:00,Yes,No,Instrument out
+ET7,S5,Temp,2023-08-06 02:00:00,2023-10-19 22:00:00,Yes,No,Instrument out; long tube ATM14
+ET7,S5,Temp,2023-10-26 23:00:00,2023-12-21 14:15:00,Yes,No,Instrument out; long tube ATM14
+ET7,S5,LWS_Count,2023-10-26 22:45:00,2024-03-01 11:30:00,Yes,No,Fritzing; long tube LWS
+ET8,S5,Temp,2023-07-23 21:45:00,2023-08-16 07:30:00,Yes,No,Instrument out; long tube ATM14
+ET8,S4,Wind_speed,2023-08-06 05:30:00,2023-08-26 09:15:00,Yes,No,Fritzing
+FB5,S5,Temp,2023-08-26 16:15:00,2023-09-07 00:15:00,Yes,No,Instrument out; Long tube A14
+FB5,S5,Temp,2023-09-14 08:00:00,2023-09-27 16:00:00,Yes,No,Instrument out; Long tube A14
+FB6,S4,Solar,2023-12-13 17:15:00,2024-01-10 10:00:00,Yes,No,Fritzing; solar giving very low values
+FB6,S4,LWS_Count,2023-10-27 06:00:00,2023-11-14 17:00:00,Yes,No,Leaf out
+FB7,S1,Solar,2023-11-09 13:45:00,2023-11-22 16:15:00,Yes,Yes,Datalogger out
+FB7,S3,Temp,2023-08-17 13:00:00,2023-09-16 23:30:00,Yes,No,Instrument blinking in and out
+FB8,S3,Solar,2023-07-06 19:15:00,2023-08-02 00:15:00,Yes,Yes,Datalogger out
+FB8,S3,Solar,2023-09-07 23:15:00,2023-09-21 00:15:00,Yes,Yes,Datalogger out
+FB8,S3,Solar,2023-11-28 14:15:00,2023-12-08 22:15:00,Yes,Yes,Datalogger out
+FB8,S1,Temp,2023-10-02 13:45:00,2023-10-09 23:45:00,Yes,No,Sensor blinking in and out
+FB8,S2,Temp,2023-07-18 15:45:00,2023-08-31 15:15:00,Yes,No,Sensor out
+FB8,S4,Temp,2023-10-10 02:45:00,2023-10-25 20:00:00,Yes,No,Sensor out
+FB8,S5,LWS_Count,2023-08-15 17:45:00,2023-09-22 08:30:00,Yes,No,Fritzing; elevated low LWS values in long tube
+FB8,S5,LWS_Count,2023-10-30 06:00:00,2024-08-10 06:15:00,Yes,No,Fritzing; elevated low LWS values in long tube
+TV1,S3,Solar,2023-10-24 03:30:00,2023-11-07 20:15:00,Yes,Yes,Datalogger out
+TV1,S5,Temp,2023-07-03 01:30:00,2024-01-22 13:45:00,Yes,No,Instrument out
+TV1,S5,Temp,2024-03-04 01:15:00,2024-07-20 19:45:00,Yes,No,Instrument out
+TV1,S5,LWS_Count,2023-10-30 07:00:00,2024-07-20 11:45:00,Yes,No,Fritzing
+TV2,S2,Solar,2023-08-17 15:30:00,2023-09-19 18:30:00,Yes,Yes,Datalogger out
+TV4,S3,LWS_Count,2023-08-30 13:00:00,2023-09-20 14:30:00,Yes,Yes,Datalogger out
+TV4,S3,LWS_Count,2023-10-12 03:15:00,2023-10-20 15:30:00,Yes,Yes,Datalogger out
+ETP1,S0,Solar,2023-11-17 06:30:00,2023-12-05 12:30:00,Yes,Yes,Datalogger out
+ETP2,S0,Solar,2023-11-21 14:45:00,2023-12-27 07:15:00,Yes,No,Instrument out
+ETP2,S0,Precipitation,2023-07-21 20:15:00,2023-08-18 08:45:00,No,No,"No rainfall recorded, likely was plugged"
+ETP2,S0,Precip_max,2023-07-21 21:30:00,2023-08-18 08:45:00,No,No,"No rainfall recorded, likely was plugged"
+FBP2,S0,Solar,2023-07-31 13:15:00,2023-08-02 15:15:00,Yes,No,Fritzing
+FBP2,S0,Solar,2023-08-12 08:15:00,2023-08-14 07:00:00,Yes,No,Fritzing
+FBP2,S0,Solar,2023-09-25 04:00:00,2023-11-14 12:30:00,Yes,No,Fritzing
+FBP2,S0,LWS_Count,2023-07-31 04:30:00,2023-08-02 20:45:00,Yes,No,Fritzing
+FBP2,S0,LWS_Count,2023-08-07 12:30:00,2023-08-14 14:30:00,Yes,No,Fritzing
+FBP2,S0,LWS_Count,2023-09-25,2023-12-02 01:30:00,Yes,No,Fritzing
